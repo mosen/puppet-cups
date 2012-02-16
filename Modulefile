@@ -1,0 +1,7 @@
+name 'cups'
+author 'mosen'
+description 'CUPS printer management'
+source 'https://github.com/mosen/puppet-cups.git'
+summary 'This module manages printers and printer default options in CUPS via the cups command line utilities'
+license 'GPLv3'
+version '0.0.1'
