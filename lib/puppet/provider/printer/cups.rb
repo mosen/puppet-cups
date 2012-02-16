@@ -1,3 +1,5 @@
+# TODO: Consider enable/disable, accept/reject and options as property methods.
+
 Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   desc "This provider manages installed printers using CUPS command line tools"
 
