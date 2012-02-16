@@ -45,9 +45,11 @@ __Example__
         ppd         => "/Library/Printers/PPDs/Printer.ppd",
         enabled     => true, # Enabled by default
         shared      => false, # Disabled by default
-        options     => [], # Not yet supported: array of PPD options
+        options     => {}, # Not yet supported: Hash of PPD options ( name => value )
     }
 ```
+
+See the __lpadmin(8)__  manual page for more information on valid device-uri's.
 
 printer_defaults
 ----------------
@@ -63,3 +65,12 @@ __Example__
         value  => "A4",
    }
 ```
+
+
+TODO
+====
+
++ Consider adding a resource type default_printer which would ensure that only one default printer was defined per
+manifest. This would be the easiest way to prevent duplicate definitions of default printers and unexpected behaviour.
++ The printers resource does not respond to changes in parameters (i.e does not re-create the printer if the uri or
+description changes for example). Investigate using property methods to force those changes.
