@@ -22,8 +22,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       :uri => '-v "%s"',
       :description => '-D "%s"',
       :location => '-L "%s"',
-      :ppd => '-P "%s"',
-      :enabled => '-E'
+      :ppd => '-P "%s"'
   }
 
   class << self
@@ -32,6 +31,30 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       lpstat('-p').split("\n").map { |line|
         line.match(/printer (.*) is/).captures[0]
       }
+    end
+
+    # Retrieve options
+    def printer_options(destination)
+      options = {}
+
+      lpoptions('-d', destination).split(' ').each do |pair|
+        kv = pair.split('=')
+        options[kv[0]] = kv[1]
+      end
+
+      options
+    end
+
+    # Retrieve Device-uri's
+    def printer_uris
+      uris = {}
+
+      lpstat('-v').split("\n").each { |line|
+        caps = line.match(/device for ([^:]*) (.*)/).captures
+        uris[caps[0]] = caps[1]
+      }
+
+      uris
     end
 
     def prefetch(resources)
@@ -48,6 +71,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     Cups_Options.keys.each do |k|
       options.unshift Cups_Options[k] % @resource[k] if @resource.parameters.key?(k)
     end
+
+    options.push '-o printer-is-shared=true' if @resource[:shared]
+    options.push '-E' if @resource[:enabled]
 
     lpadmin "-p", @resource[:name], options
   end

@@ -54,6 +54,10 @@ Puppet::Type.newtype(:printer) do
 
   newparam(:options) do
     desc "Sets a PPD option for the printer"
+
+    validate do |value|
+      raise ArgumentError, "invalid value supplied for printer options" unless value.is_a? Hash
+    end
   end
 
 
