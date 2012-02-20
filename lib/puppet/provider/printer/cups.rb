@@ -109,6 +109,10 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
       prefetched_long
     end
+
+    def instances
+      []
+    end
   end
 
   def create
