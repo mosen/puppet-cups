@@ -2,6 +2,10 @@
 # TODO: Consider parsing lpstat -l -p for more detail on prefetch
 # TODO: lpstat -v for device-uris in prefetch
 # TODO: change of device uri should imply destroy+create
+# NOTE: cups will always report the PPD being used in /etc/cups/ppds even if the ppd is sourced outside of this dir.
+# So, we can't reliably detect the PPD state.
+
+require 'shellwords'
 
 Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   desc "This provider manages installed printers using CUPS command line tools"
@@ -17,29 +21,63 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   commands :cupsaccept => "/usr/sbin/cupsaccept"
   commands :cupsreject => "/usr/sbin/cupsreject"
 
-  # A hash of possible parameters to their command-line equivalents.
-  Cups_Options = {
-      :uri => '-v "%s"',
-      :description => '-D "%s"',
-      :location => '-L "%s"',
-      :ppd => '-P "%s"'
-  }
-
   class << self
 
+    # A hash of possible parameters to their command-line equivalents.
+    Cups_Options = {
+        :uri => '-v "%s"',
+        :description => '-D "%s"',
+        :location => '-L "%s"',
+        :ppd => '-P "%s"'
+    }
+
+    # Retrieve simple list of printer names
     def printers
       lpstat('-p').split("\n").map { |line|
         line.match(/printer (.*) is/).captures[0]
       }
     end
 
-    # Retrieve options
+    # Retrieve long listing of printers
+    # The PPD path that CUPS uses may have been automatically reformatted or changed by CUPS. making it hard to keep
+    # ppd location idempotent.
+    # TODO: theres probably a better way to parse this.
+    def printers_long
+      printers = []
+      printer = {} # Current printer entry being parsed
+
+      lpstat('-l', '-p').split("\n").each { |line|
+        case line
+          when /^printer/
+
+            if printer.key? :name # Push the last result
+              printers.push printer
+              printer = {}
+            end
+
+            printer[:name] = line.match(/printer (.*) is/).captures[0]
+          when /^\tDescription/
+            printer[:description] = line.match(/\tDescription: (.*)/).captures[0]
+          when /^\tLocation/
+            printer[:location] = line.match(/\tLocation: (.*)/).captures[0]
+          when /^\tInterface/
+            printer[:ppd] = line.match(/\tInterface: (.*)/).captures[0]
+        end
+      }
+
+      printers.push printer
+
+      printers
+    end
+
+    # Retrieve options including whether the printer destination is shared.
     def printer_options(destination)
       options = {}
 
-      lpoptions('-d', destination).split(' ').each do |pair|
-        kv = pair.split('=')
-        options[kv[0]] = kv[1]
+      # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
+      lpoptions('-d', destination).shellsplit.each do |kv|
+        values = kv.split('=')
+        options[values[0]] = values[1]
       end
 
       options
@@ -50,7 +88,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       uris = {}
 
       lpstat('-v').split("\n").each { |line|
-        caps = line.match(/device for ([^:]*) (.*)/).captures
+        caps = line.match(/device for (.*): (.*)/).captures
         uris[caps[0]] = caps[1]
       }
 
@@ -58,9 +96,18 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
 
     def prefetch(resources)
-      printers.collect { |p|
-        new({ :name => p, :provider => :cups })
+      prefetched_uris = self.printer_uris
+
+      prefetched_long = self.printers_long.collect { |p|
+
+        p[:options] = self.printer_options(p[:name])
+        p[:provider] = :cups
+        p[:uri] = prefetched_uris[p] if prefetched_uris.key? p
+
+        new(p)
       }
+
+      prefetched_long
     end
   end
 
@@ -82,8 +129,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     lpadmin "-x", @resource[:name]
   end
 
+  # TODO: use prefetched resources instead of executing the utility again.
   def exists?
-    #TODO: lpadmin considers printer names case-insensitive, use case-insensitive match
-    self.class.printers.include? @resource[:name]
+    self.class.printers.select { |v| v.downcase == @resource[:name].downcase }.length > 0
   end
 end
