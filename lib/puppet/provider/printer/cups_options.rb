@@ -1,5 +1,13 @@
 Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::Provider do
-  desc "This provider manages default printer options using CUPS command line tools"
+  desc "This provider manages default printer options by executing lpoptions(1) as the root user.
+
+  The root options are saved under /etc/cups/lpoptions.
+
+  Note: On Mac OS X the default lpoptions do not correlate with the print dialog. The default printer and default media
+  are selected by ~/Library/Preferences/com.apple.print.PrintingPrefs.plist (10.6) and submitted with the job options.
+
+
+  "
 
   commands :lpoptions => "/usr/bin/lpoptions"
   commands :lpinfo => "/usr/sbin/lpinfo"

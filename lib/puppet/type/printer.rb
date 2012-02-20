@@ -54,6 +54,7 @@ Puppet::Type.newtype(:printer) do
     end
   end
 
+  # Allow a printer resource without explicitly specifying a file resource for the PPD.
   autorequire(:file) do
      self[:ppd] if self.has_key? :ppd
   end
