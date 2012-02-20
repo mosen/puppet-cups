@@ -26,16 +26,10 @@ Puppet::Type.newtype(:printer) do
 
   newparam(:location) do
     desc "Provides a textual location of the destination."
-
   end
 
   newparam(:ppd) do
     desc "Specifies a PostScript Printer Description file to use with the printer."
-
-    # TODO: autorequire the ppd?
-    #autorequire(:file) do
-    #  []
-    #end
   end
 
   newparam(:enabled) do
@@ -60,5 +54,7 @@ Puppet::Type.newtype(:printer) do
     end
   end
 
-
+  autorequire(:file) do
+     self[:ppd] if self.has_key? :ppd
+  end
 end
