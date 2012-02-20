@@ -21,15 +21,15 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   commands :cupsaccept => "/usr/sbin/cupsaccept"
   commands :cupsreject => "/usr/sbin/cupsreject"
 
-  class << self
+  # A hash of possible parameters to their command-line equivalents.
+  Cups_Options = {
+      :uri => '-v %s', # lpadmin wont accept a quoted value for device-uri
+      :description => '-D "%s"',
+      :location => '-L "%s"',
+      :ppd => '-P "%s"'
+  }
 
-    # A hash of possible parameters to their command-line equivalents.
-    Cups_Options = {
-        :uri => '-v "%s"',
-        :description => '-D "%s"',
-        :location => '-L "%s"',
-        :ppd => '-P "%s"'
-    }
+  class << self
 
     # Retrieve simple list of printer names
     def printers
@@ -121,6 +121,12 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     options.push '-o printer-is-shared=true' if @resource[:shared]
     options.push '-E' if @resource[:enabled]
+
+    if @resource[:options].is_a? Hash
+      @resource[:options].each_pair do |k, v|
+        options.push "-o %s='%s'" % k, v
+      end
+    end
 
     lpadmin "-p", @resource[:name], options
   end
