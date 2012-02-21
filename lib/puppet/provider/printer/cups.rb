@@ -95,6 +95,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       uris
     end
 
+    # TODO: unify prefetch/instances
     def prefetch(resources)
       prefetched_uris = self.printer_uris
 
@@ -111,7 +112,18 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
 
     def instances
-      []
+      prefetched_uris = self.printer_uris
+
+      prefetched_long = self.printers_long.collect { |p|
+
+        p[:options] = self.printer_options(p[:name])
+        p[:provider] = :cups
+        p[:uri] = prefetched_uris[p] if prefetched_uris.key? p
+
+        new(p)
+      }
+
+      prefetched_long
     end
   end
 

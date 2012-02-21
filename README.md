@@ -42,7 +42,7 @@ __Example__
         uri         => "lpd://localhost/printer_a",
         description => "This is the printer description",
         location    => "Main office",
-        ppd         => "/Library/Printers/PPDs/Printer.ppd",
+        ppd         => "/Library/Printers/PPDs/Printer.ppd", # PPD file will be autorequired
         enabled     => true, # Enabled by default
         shared      => false, # Disabled by default
         options     => {}, # Not yet supported: Hash of PPD options ( name => value )

@@ -1,47 +1,99 @@
 #!/usr/bin/env rspec
 
-# TODO: cant require spec_helper outside of puppet tree?
+require 'spec_helper'
 
 printer = Puppet::Type.type(:printer)
 
 describe printer do
   before do
-    #ENV["PATH"] += File::PATH_SEPARATOR + "/usr/sbin" unless ENV["PATH"].split(File::PATH_SEPARATOR).include?("/usr/sbin")
+    @class = printer
     @provider = stub 'provider'
-    #@resource = stub 'resource', :resource => nil, :provider => @provider, :line => nil, :file => nil
+    @provider.stubs(:name).returns(:cups)
+    Puppet::Type::Printer.stubs(:defaultprovider).returns @provider
+
+    @resource = @class.new({:name => 'RSpec_Test_Printer'})
   end
 
-  it "should have a default provider inheriting from Puppet::Provider" do
-    printer.defaultprovider.ancestors.should be_include(Puppet::Provider)
+  it 'should have :name be its namevar' do
+    @class.key_attributes.should == [:name]
   end
 
-  it "should be able to create a instance" do
-    printer.new(:name => "foo").should_not be_nil
-  end
-
-  describe "instances" do
-    it "should have a valid provider" do
-      printer.new(:name => "foo").provider.class.ancestors.should be_include(Puppet::Provider)
+  describe ':name' do
+    it 'should accept a name' do
+      @resource[:name] = 'RSpec_Test_Printer'
+      @resource[:name].should == 'RSpec_Test_Printer'
     end
 
-    it "should delegate existence questions to its provider" do
-      instance = printer.new(:name => "foo")
-      instance.provider.expects(:exists?).returns "eh"
-      instance.exists?.should == "eh"
+    # CUPS naming requirements
+
+    it 'should not accept a name with spaces' do
+      lambda { @resource[:name] = ' test' }.should raise_error(Puppet::Error)
+    end
+
+    it 'should not accept a name with tabs' do
+      lambda { @resource[:name] = "\ttest" }.should raise_error(Puppet::Error)
+    end
+
+    it 'should not accept a name with forward slash' do
+      lambda { @resource[:name] = "test/printer" }.should raise_error(Puppet::Error)
+    end
+
+    it 'should not accept a name with the pound sign' do
+      lambda { @resource[:name] = "test#printer" }.should raise_error(Puppet::Error)
     end
   end
 
-  properties = [:ensure, :name, :uri, :description, :location, :ppd, :enabled, :shared, :options]
-
-  properties.each do |property|
-    it "should have a #{property} property" do
-      printer.attrclass(property).ancestors.should be_include(Puppet::Property)
-    end
-
-    it "should have documentation for its #{property} property" do
-      printer.attrclass(property).doc.should be_instance_of(String)
+  describe ':uri' do
+    it 'should accept a string' do
+      @resource[:uri] = "test"
     end
   end
 
+  describe ':description' do
+    it 'should accept a string' do
+      @resource[:description] = "test"
+    end
+  end
 
+  describe ':location' do
+    it 'should accept a string' do
+      @resource[:location] = "test"
+    end
+  end
+
+  describe ':ppd' do
+    it 'should accept a string' do
+      @resource[:location] = "test"
+    end
+  end
+
+  describe ':enabled' do
+    it 'should fail if not supplied a boolean value' do
+      lambda { @resource[:enabled] = "test" }.should raise_error(Puppet::Error)
+    end
+
+    [true, false].each do |v|
+      it "should accept boolean value of #{v}" do
+        @resource[:enabled] = v
+      end
+    end
+  end
+
+  describe ':shared' do
+    it 'should fail if not supplied a boolean value' do
+      lambda { @resource[:shared] = "test" }.should raise_error(Puppet::Error)
+    end
+
+    [true, false].each do |v|
+      it "should accept boolean value of #{v}" do
+        @resource[:enabled] = v
+      end
+    end
+  end
+
+  describe ':options' do
+    it 'should fail if not supplied a hash value' do
+      lambda { @resource[:shared] = "test" }.should raise_error(Puppet::Error)
+    end
+  end
 end
