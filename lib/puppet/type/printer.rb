@@ -1,10 +1,5 @@
 Puppet::Type.newtype(:printer) do
-  @doc = "Manage installed printers on a puppet node.
-
-  If you need a list of options for a particular PPD you can use lpoptions -l as specified in the man page for lpadmin(8).
-
-  If you need a list of supported uri's use the -v option with the lpinfo(8) command (as specified in the man page for lpadmin(8))
-  "
+  @doc = "Manage installed printers and printer queues on a puppet node."
 
   ensurable
 
@@ -34,6 +29,13 @@ Puppet::Type.newtype(:printer) do
 
   newparam(:enabled) do
     desc "Enables the destination and accepts jobs"
+
+    newvalues(:true, :false)
+    defaultto :true
+  end
+
+  newparam(:accept) do
+    desc "Specifies whether the destination will accept jobs, or reject them."
 
     newvalues(:true, :false)
     defaultto :true
