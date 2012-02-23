@@ -11,30 +11,30 @@ Puppet::Type.newtype(:printer) do
     end
   end
 
-  newparam(:uri) do
-    desc "Sets the device-uri attribute of the printer queue."
+  newproperty(:uri) do
+    desc "Sets the device-uri attribute of the printer destination."
   end
 
-  newparam(:description) do
+  newproperty(:description) do
     desc "Provides a textual description of the destination."
   end
 
-  newparam(:location) do
+  newproperty(:location) do
     desc "Provides a textual location of the destination."
   end
 
-  newparam(:ppd) do
+  newproperty(:ppd) do
     desc "Specifies a PostScript Printer Description file to use with the printer."
   end
 
-  newparam(:enabled) do
+  newproperty(:enabled) do
     desc "Enables the destination and accepts jobs"
 
     newvalues(:true, :false)
     defaultto :true
   end
 
-  newparam(:accept) do
+  newproperty(:accept) do
     desc "Specifies whether the destination will accept jobs, or reject them."
 
     newvalues(:true, :false)
@@ -49,7 +49,7 @@ Puppet::Type.newtype(:printer) do
   end
 
   newparam(:options) do
-    desc "Sets a PPD option for the printer"
+    desc "Sets a list of PPD options for the printer"
 
     validate do |value|
       raise ArgumentError, "invalid value supplied for printer options" unless value.is_a? Hash
@@ -58,6 +58,6 @@ Puppet::Type.newtype(:printer) do
 
   # Allow a printer resource without explicitly specifying a file resource for the PPD.
   autorequire(:file) do
-     self[:ppd] if self.has_key? :ppd
+     self[:ppd] if self[:ppd]
   end
 end
