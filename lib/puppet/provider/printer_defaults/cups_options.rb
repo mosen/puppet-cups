@@ -7,6 +7,8 @@ Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::P
 
   Note: On Mac OS X the default lpoptions do not correlate with the print dialog. The default printer and default media
   are selected by ~/Library/Preferences/com.apple.print.PrintingPrefs.plist (10.6) and submitted with the job options.
+
+  Classes are parsed as normal printer destinations at the moment, and are interpreted as such.
   "
 
   commands :lpoptions => "/usr/bin/lpoptions"
@@ -14,6 +16,7 @@ Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::P
 
   mk_resource_methods
 
+  # TODO: make this a mixin for the cups provider too.
   # Retrieve options including whether the printer destination is shared.
   def self.printer_options(destination = nil)
     options = {}
