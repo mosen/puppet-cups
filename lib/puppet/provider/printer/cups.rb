@@ -17,8 +17,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   have taken effect. This will be addressed in future versions of the provider.
   "
 
-  include Puppet::Util::Warnings
-
   commands :lpadmin => "/usr/sbin/lpadmin"
   commands :lpoptions => "/usr/bin/lpoptions"
   #commands :lpinfo => "/usr/sbin/lpinfo"
