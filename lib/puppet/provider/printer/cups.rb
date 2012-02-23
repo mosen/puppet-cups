@@ -71,9 +71,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # Retrieve simple list of printer names
   def self.printers
-    lpstat('-p').split("\n").map { |line|
-      line.match(/printer (.*) is/).captures[0]
-    }
+    printers = lpstat('-p').split("\n").map { |line|
+      line.match(/printer (.*) (is|disabled)/) {|m|
+        m.captures[0]
+      }
+    }.compact
+
+    printers
   end
 
 

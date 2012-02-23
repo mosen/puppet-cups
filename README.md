@@ -1,43 +1,55 @@
-CUPS support for puppet
-=======================
+## puppet-cups module
 
-*IN DEVELOPMENT*
+## User Guide
 
-This module/resource aims to provide support for management of the CUPS printing system.
+### Overview
 
-Primarily it will be used to add and remove printers from client machines running the Mac OS X operating system,
-although it should be generic enough to use with any linux/bsd variety with CUPS installed.
+This type provides the ability to manage cups printers and options.
 
-It may eventually be used to manage permissions and options for the cups daemon.
+Limitations:
++ It currently does not support classes.
++ It currently does not set default printers.
 
+This document is loosely based upon puppetlabs-firewall README, so credit to the maintainers of puppetlabs-firewall for
+establishing the format.
 
-Facter Facts
-============
+### Installation
 
-A list of facter facts provided by the module.
+This module should be checked out or otherwise copied into your modulepath.
 
-printers
---------
+If you are not sure where your module path is try this command:
 
-Provides a list of installed printers.
+    puppet --configprint modulepath
 
+This module uses Ruby based providers so your Puppet configuration
+(ie. puppet.conf) must include the following items:
 
-Resource Types
-==============
+    [agent]
+    pluginsync = true
 
-A list of resource types provided by the module.
+The module will not operate normally without these features enabled for the
+client.
 
-printer
--------
+### Examples
 
-The printer resource type is used to add and remove printers from a puppet node.
+The most basic printer install possible:
 
-__Example__
+    printer { "Basic_Printer":
+        ensure      => present,
+        uri         => "lpd://hostname/printer_a",
+        description => "This is the printer description",
+        ppd         => "/Library/Printers/PPDs/Printer.ppd", # PPD file will be autorequired
+    }
 
-```
-    # Printer resource sample : all parameters listed (except for ppd options, which depend on the ppd).
+Removing the printer "Basic_Printer" from the previous example:
 
-    printer { "Printer_A":
+    printer { "Basic_Printer":
+        ensure      => absent,
+    }
+
+More advanced install using most of the available properties:
+
+    printer { "Extended_Printer":
         ensure      => present,
         uri         => "lpd://localhost/printer_a",
         description => "This is the printer description",
@@ -45,32 +57,50 @@ __Example__
         ppd         => "/Library/Printers/PPDs/Printer.ppd", # PPD file will be autorequired
         enabled     => true, # Enabled by default
         shared      => false, # Disabled by default
-        options     => {}, # Not yet supported: Hash of PPD options ( name => value )
+        options     => { media => 'A4' }, # Hash of options ( name => value )
     }
-```
 
-See the __lpadmin(8)__  manual page for more information on valid device-uri's.
+You can also set a number of default options which will apply to all printers by using the printer_defaults resource.
+For instance if you wanted to default the media option to 'A4' for all printers:
 
-printer_defaults
-----------------
-
-The printer defaults resource type is used to define default options for the CUPS printing system.
-
-__Example__
-
-
-```
-   printer_defaults { "media":
+    printer_defaults { "media":
         ensure => present,
         value  => "A4",
-   }
-```
+    }
+
+You can also set printer_defaults to ensure => absent, if you want the option to be unset.
 
 
-TODO
-====
+The module provides access to one additional facter fact "printers", which provides a comma separated list of installed
+printers.
 
-+ Consider adding a resource type default_printer which would ensure that only one default printer was defined per
-manifest. This would be the easiest way to prevent duplicate definitions of default printers and unexpected behaviour.
-+ The printers resource does not respond to changes in parameters (i.e does not re-create the printer if the uri or
-description changes for example). Investigate using property methods to force those changes.
+See the __lpadmin(8)__  manual page for more information on valid device-uri's.
+You can execute __lpoptions -l__ to list the valid options for the current printer.
+
+For more information refer to the CUPS administrators manual.
+
+### Bugs
+
+Please submit any issues through Github issues as I don't have a dedicated project page for this module.
+
+## Developer Guide
+
+### Contributing
+
+You can issue a pull request and send me a message if you like, and I will consider taking the patch upstream :)
+
+### Testing
+
+The tests are really only basic at the moment.
+
+Make sure you have:
+
+    rake
+
+Install the necessary gems:
+
+    gem install rspec
+
+And run the tests from the root of the source code:
+
+    rake test
