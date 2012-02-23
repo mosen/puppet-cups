@@ -12,6 +12,8 @@ Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::P
   commands :lpoptions => "/usr/bin/lpoptions"
   #commands :lpinfo => "/usr/sbin/lpinfo"
 
+  mk_resource_methods
+
   # Retrieve options including whether the printer destination is shared.
   def self.printer_options(destination = nil)
     options = {}
@@ -33,13 +35,15 @@ Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::P
 
   # Combine output of a number of commands to form a list of printer resources.
   def self.instances
-    prefetched_options = self.printer_options().each_pair { |k, v|
-      new({
-        :name => k,
-        :value => v,
+    prefetched_options = []
+
+    self.printer_options().each do |key, value|
+      prefetched_options << new({
+        :name => key,
+        :value => value,
         :provider => :cups_options
       })
-    }
+    end
 
     prefetched_options
   end
@@ -61,7 +65,6 @@ Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::P
   end
 
   def exists?
-    puts 'exists option?'
-    self.printer_options().key? @resource[:name]
+    self.class.printer_options().key? @resource[:name]
   end
 end
