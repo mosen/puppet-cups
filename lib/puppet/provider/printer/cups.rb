@@ -13,8 +13,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   See the lpinfo(8) man page for more detail.
 
-  The PPD file location reported by cups might have been reformatted by cups, so it's difficult to identify whether our changes
-  have taken effect. This will be addressed in future versions of the provider.
+  The PPD file location reported by cups might have been changed by cups (depending on the -m model option or -P ppd
+  option, so it's difficult to identify whether our changes have taken effect. These parameters will only be set on
+  creation (for the moment).
   "
 
   commands :lpadmin => "/usr/sbin/lpadmin"
@@ -34,6 +35,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # A hash of possible parameters to their command-line equivalents.
   Cups_Options = {
+      :class => '-c "%s"', # Not fully supported yet, but left here for the adventurous.
+      :model => '-m "%s"',
       :uri => '-v "%s"', # lpadmin wont accept a quoted value for device-uri
       :description => '-D "%s"',
       :location => '-L "%s"',
