@@ -35,30 +35,29 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # A hash of possible parameters to their command-line equivalents.
   Cups_Options = {
-      :class => '-c "%s"', # Not fully supported yet, but left here for the adventurous.
-      :model => '-m "%s"',
-      :uri => '-v "%s"', # lpadmin wont accept a quoted value for device-uri
-      :description => '-D "%s"',
-      :location => '-L "%s"',
-      :ppd => '-P "%s"'
+      :class       => '-c%s', # Not fully supported yet, but left here for the adventurous.
+      :model       => '-m%s',
+      :uri         => '-v%s', # lpadmin wont accept a quoted value for device-uri
+      :description => '-D%s',
+      :location    => '-L%s',
+      :ppd         => '-P%s'
   }
 
   # Combine output of a number of commands to form a list of printer resources.
   def self.instances
 
-    prefetched_uris = self.printer_uris
-    prefetched_long = self.printers_long.collect { |printer|
+    prefetched_uris = printer_uris
+    prefetched_long = printers_long.collect { |printer|
 
       printer[:options] = self.printer_options(printer[:name])
       printer[:provider] = :cups
-      printer[:uri] = prefetched_uris[printer] if prefetched_uris.key? printer
+      printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
       # derived from options
       printer[:shared] = printer[:options]['printer-is-shared']
 
       new(printer)
     }
-
     @property_hash = prefetched_long
 
     prefetched_long
@@ -74,15 +73,18 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # Retrieve simple list of printer names
   def self.printers
-    printers = lpstat('-p').split("\n").map { |line|
-      line.match(/printer (.*) (is|disabled)/) {|m|
-        m.captures[0]
-      }
-    }.compact
+    begin
+      printers = lpstat('-p').split("\n").map { |line|
+        line.match(/printer (.*) (is|disabled)/) {|m|
+          m.captures[0]
+        }
+      }.compact
 
-    printers
+      printers
+    rescue
+      nil
+    end
   end
-
 
   # Retrieve long listing of printers
   # The PPD path that CUPS uses may have been automatically reformatted or changed by CUPS. making it hard to keep
@@ -99,7 +101,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
           if printer.key? :name # Push the last result
             printers.push printer
-            printer = {}
+            printer = { :accept => true } # Current printer entry being parsed
           end
 
           header = line.match(/printer (.*) (disabled|is idle)/).captures
@@ -149,7 +151,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     uris
   end
 
-
   def create
     options = Array.new
 
@@ -176,11 +177,19 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # TODO: use prefetched resources instead of executing the utility again.
   def exists?
-    self.class.printers.select { |v| v.downcase == @resource[:name].downcase }.length > 0
+    if self.class.printers
+      self.class.printers.select { |v| v.captures[0].downcase == @resource[:name].downcase }.length > 0
+    else
+      false
+    end
   end
 
-  def enabled?
-    @property_hash[:enabled]
+  def enabled
+    @property_hash[:enabled].to_s
+  end
+
+  def accept
+    @property_hash[:accept].to_s
   end
 
   def enable
@@ -192,6 +201,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   def flush
+    create
     @property_hash.clear
   end
 end
