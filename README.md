@@ -9,6 +9,7 @@ This type provides the ability to manage cups printers and options.
 Limitations:
 + It currently does not support classes.
 + It currently does not set default printers.
++ It does not set vendor ppd options (where an external process is responsible for modifying the ppd).
 
 This document is loosely based upon puppetlabs-firewall README, so credit to the maintainers of puppetlabs-firewall for
 establishing the format.
@@ -84,6 +85,15 @@ For more information refer to the CUPS administrators manual.
 Please submit any issues through Github issues as I don't have a dedicated project page for this module.
 
 ## Developer Guide
+
+### Vendor PPD Options
+
+The provider does not currently generate PPD files based upon the vendor supplied printer definition. This means that
+if the vendor has supplied a PPD with Apple extensions i.e You see a UI which allows you to pick printer features, then
+you need to generate your own ppd first for distribution.
+
+I would recommend doing a manual installation of the printer with the customizations from the ui picker, and then using
+the resulting PPD as the printer description.
 
 ### Contributing
 
