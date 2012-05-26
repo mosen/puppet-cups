@@ -131,7 +131,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     options = {}
 
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
-    lpoptions('-d', destination).shellsplit.each do |kv|
+    Shellwords.shellwords(lpoptions('-d', destination)).each do |kv|
       values = kv.split('=')
       options[values[0]] = values[1]
     end
