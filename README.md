@@ -11,25 +11,21 @@ Limitations:
 + It currently does not set default printers.
 + It does not set vendor ppd options (where an external process is responsible for modifying the ppd).
 
-This document is loosely based upon puppetlabs-firewall README, so credit to the maintainers of puppetlabs-firewall for
-establishing the format.
-
 ### Installation
 
-This module should be checked out or otherwise copied into your modulepath.
+This module should be cloned or otherwise copied into your modulepath.
 
 If you are not sure where your module path is try this command:
 
     puppet --configprint modulepath
 
-This module uses Ruby based providers so your Puppet configuration
-(ie. puppet.conf) must include the following items:
+This module provides new types in the form of plugins, so your Puppet configuration
+(ie. puppet.conf) must include a pluginsync directive like this:
 
     [agent]
     pluginsync = true
 
-The module will not operate normally without these features enabled for the
-client.
+Without pluginsync, any manifest with a `printer` resource in it will throw an error.
 
 ### Examples
 
@@ -55,7 +51,9 @@ More advanced install using most of the available properties:
         uri         => "lpd://localhost/printer_a",
         description => "This is the printer description",
         location    => "Main office",
-        ppd         => "/Library/Printers/PPDs/Printer.ppd", # PPD file will be autorequired
+        ppd         => "/Library/Printers/PPDs/Printer.ppd", # Full path to vendor PPD
+        # OR
+        model       => "", # A valid model, you can list these with lpinfo -m
         enabled     => true, # Enabled by default
         shared      => false, # Disabled by default
         options     => { media => 'A4' }, # Hash of options ( name => value )
@@ -71,6 +69,7 @@ For instance if you wanted to default the media option to 'A4' for all printers:
 
 You can also set printer_defaults to ensure => absent, if you want the option to be unset.
 
+### Facts
 
 The module provides access to one additional facter fact "printers", which provides a comma separated list of installed
 printers.
@@ -93,7 +92,8 @@ if the vendor has supplied a PPD with Apple extensions i.e You see a UI which al
 you need to generate your own ppd first for distribution.
 
 I would recommend doing a manual installation of the printer with the customizations from the ui picker, and then using
-the resulting PPD as the printer description.
+the resulting PPD as the printer description. On OS X you can retrieve the ppd from /private/etc/cups/ppd after you have
+customized the printer features.
 
 ### Contributing
 
@@ -101,7 +101,7 @@ You can issue a pull request and send me a message if you like, and I will consi
 
 ### Testing
 
-The tests are really only basic at the moment.
+The tests need a lot of improvement, but you can run them with RSpec in the typical way:
 
 Make sure you have:
 
