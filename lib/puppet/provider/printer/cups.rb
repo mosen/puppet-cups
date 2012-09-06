@@ -46,7 +46,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     provider_instances = []
 
     printers_long.each do |name, printer|
-      printer[:ensure] = :present
+
       printer[:options] = self.printer_options(name)
       printer[:provider] = :cups
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
@@ -56,19 +56,32 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
       provider_instances << new(printer)
     end
+
+    provider_instances
   end
 
   def self.prefetch(resources)
-    printers = instances
+    prefetched_uris = printer_uris
+    prefetched_printers = printers_long
 
     resources.each do |name, resource|
-      if printers.has_key? name
-        resource.provider = printers[name]
+
+      if prefetched_printers.has_key? name
+        printer = prefetched_printers[name]
+
+        printer[:ensure] = :present
+        printer[:options] = self.printer_options(name)
+        printer[:provider] = :cups
+        printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
+
+        # derived from options
+        printer[:shared] = printer[:options]['printer-is-shared']
+
+        resource.provider = new(printer)
       else
         resource.provider = new(:ensure => :absent)
       end
     end
-
   end
 
   # Retrieve simple list of printer names
@@ -90,7 +103,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     printers = {}
 
     begin
-      printer = { :accept => true } # Current printer entry being parsed
+      printer = { :accept => :true } # Current printer entry being parsed
 
       lpstat('-l', '-p').split("\n").each { |line|
         case line
@@ -98,13 +111,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
             if printer.key? :name # Push the last result
               printers[printer[:name]] = printer
-              printer = { :accept => true } # Current printer entry being parsed
+              printer = { :accept => :true } # Current printer entry being parsed
             end
 
             header = line.match(/printer (.*) (disabled|is idle)/).captures # TODO: i18n
 
             printer[:name] = header[0]
-            printer[:enabled] = (header[1] != 'disabled')
+            printer[:enabled] = (header[1] != 'disabled') ? :true : :false
 
           when /^\tDescription/
             printer[:description] = line.match(/\tDescription: (.*)/).captures[0]
@@ -113,7 +126,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           when /^\tInterface/
             printer[:ppd] = line.match(/\tInterface: (.*)/).captures[0]
           when /^\tRejecting Jobs$/
-            printer[:accept] = false
+            printer[:accept] = :false
         end
       }
 
@@ -178,26 +191,33 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       when :absent
         lpadmin "-x", name
       when :present
-        if @resource[:ensure] === :absent
-          options = Array.new
+        # Regardless of whether the printer is being added or modified, the `lpadmin -p` command is used.
 
-          # Handle most parameters via string substitution
-          Cups_Options.keys.each do |k|
-            options.unshift Cups_Options[k] % @property_hash[k] if @property_hash.key?(k)
+        options = Array.new
+
+        # Handle most parameters via string substitution
+        Cups_Options.keys.each do |k|
+          options.unshift Cups_Options[k] % @property_hash[k] if @property_hash.key?(k)
+        end
+
+        options.push '-o printer-is-shared=true' if @property_hash[:shared]
+        options.push '-E' if @property_hash[:enabled]
+
+        if @property_hash[:options].is_a? Hash
+          @property_hash[:options].each_pair do |k, v|
+            options.push "-o %s='%s'" % k, v
           end
+        end
 
-          options.push '-o printer-is-shared=true' if @property_hash[:shared]
-          options.push '-E' if @property_hash[:enabled]
-
-          if @property_hash[:options].is_a? Hash
-            @property_hash[:options].each_pair do |k, v|
-              options.push "-o %s='%s'" % k, v
-            end
-          end
-
+        begin
           lpadmin "-p", name, options
-        else
-          debug 'Only update'
+        rescue Exception => e
+          # If an option turns out to be invalid, CUPS will normally add the printer anyway.
+          # Normally, the printer should not even be created, so we delete it again to make things consistent.
+          debug 'Failed to add printer successfully, deleting destination. error: ' + e.message
+          lpadmin "-x", name
+
+          raise e
         end
     end
 
