@@ -11,21 +11,6 @@ Puppet::Type.newtype(:printer) do
     end
   end
 
-  # Classes are not yet supported.
-  #newproperty(:class) do
-  #  desc "Adds the named printer to the specified class. If the class does not exist it is created automatically.
-  #
-  #  "
-  #end
-
-  #newproperty(:allow) do
-  #  desc "Specifically allow users and/or groups to print to this destination."
-  #end
-  #
-  #newproperty(:deny) do
-  #  desc "Specifically deny users and/or groups to print to this destination."
-  #end
-
   newproperty(:uri) do
     desc "Sets the device-uri attribute of the printer destination."
   end
