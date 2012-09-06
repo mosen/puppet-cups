@@ -41,7 +41,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # The instances method collects information through a number of different command line utilities because no single
   # utility displays all of the information about a printer's configuration.
   def self.instances
-
     prefetched_uris = printer_uris
     provider_instances = []
 
@@ -193,6 +192,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       when :present
         # Regardless of whether the printer is being added or modified, the `lpadmin -p` command is used.
 
+        # BUG: flush should never be called if only the model or PPD parameters differ, because lpstat can't tell
+        # what the actual value is.
         options = Array.new
 
         # Handle most parameters via string substitution
