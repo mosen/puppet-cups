@@ -13,21 +13,25 @@ Limitations:
 
 ### Installation
 
-This module should be cloned or otherwise copied into your modulepath.
+You can install the latest release version from the module forge by executing this command:
 
-If you are not sure where your module path is try this command:
+    puppet module install mosen-cups
 
-    puppet --configprint modulepath
+If you are feeling brave, or want to test the version in development you can clone the github repository into
+your module path.
 
-This module provides new types in the form of plugins, so your Puppet configuration
-(ie. puppet.conf) must include a pluginsync directive like this:
+This module provides new types in the form of plugins, so pluginsync must be enabled for every agent in the
+puppet configuration (usually /etc/puppet/puppet.conf) like this:
 
     [agent]
     pluginsync = true
 
-Without pluginsync, any manifest with a `printer` resource in it will throw an error.
+Without pluginsync enabled, any manifest with a `printer` resource in it will throw an error
+or possibly just do nothing.
 
 ### Examples
+
+#### Basic
 
 The most basic printer install possible:
 
@@ -38,13 +42,23 @@ The most basic printer install possible:
         ppd         => "/Library/Printers/PPDs/Printer.ppd", # PPD file will be autorequired
     }
 
+- The uri identifies how you will connect to the printer. running `lpinfo -v` at the command line will give you some
+valid uri prefixes.
+- The description only appears in certain dialogs on linux and friends. On OSX the description is the actual name of
+the printer.
+- The ppd or model parameter specifies the "driver" to use with this printer. You should use `model` wherever available
+because most driver software will install straight into the cups model directory. You can get a list of valid models by
+running `lpinfo -m` at the command line.
+
 Removing the printer "Basic_Printer" from the previous example:
 
     printer { "Basic_Printer":
         ensure      => absent,
     }
 
-More advanced install using most of the available properties:
+### Advanced
+
+An example using almost every possible parameter:
 
     printer { "Extended_Printer":
         ensure      => present,
@@ -53,31 +67,22 @@ More advanced install using most of the available properties:
         location    => "Main office",
         ppd         => "/Library/Printers/PPDs/Printer.ppd", # Full path to vendor PPD
         # OR
-        model       => "", # A valid model, you can list these with lpinfo -m
+        model       => "", # A valid model, you can list these with lpinfo -m, this is usually what you would call a
+                           # list of installed drivers.
         enabled     => true, # Enabled by default
         shared      => false, # Disabled by default
-        options     => { media => 'A4' }, # Hash of options ( name => value )
+        options     => { media => 'A4' }, # Hash of options ( name => value ), highly depends on the printer.
     }
 
-You can also set a number of default options which will apply to all printers by using the printer_defaults resource.
-For instance if you wanted to default the media option to 'A4' for all printers:
-
-    printer_defaults { "media":
-        ensure => present,
-        value  => "A4",
-    }
-
-You can also set printer_defaults to ensure => absent, if you want the option to be unset.
+- The easiest way to find out a list of valid options for any single printer is to install that printer locally, and
+run `lpoptions -l` at the command line.
 
 ### Facts
 
 The module provides access to one additional facter fact "printers", which provides a comma separated list of installed
 printers.
 
-See the __lpadmin(8)__  manual page for more information on valid device-uri's.
-You can execute __lpoptions -l__ to list the valid options for the current printer.
-
-For more information refer to the CUPS administrators manual.
+For more information about printer options, models, and uri's, refer to the CUPS documentation.
 
 ### Bugs
 
@@ -85,7 +90,32 @@ Please submit any issues through Github issues as I don't have a dedicated proje
 
 ## Developer Guide
 
-### Vendor PPD Options
+### OSX Specifics
+
+#### Printer Presets
+
+Each printer can have a set of options, normally presented in the print dialog, saved as a named preset.
+Named presets are stored in property lists at the following location:
+
+    ~/Library/Preferences/com.apple.print.custompresets._PRINTER_QUEUE_NAME_.plist
+
+#### Default Printer
+
+If you select "Last Used Printer", it will select the printer in:
+
+    ~/Library/Preferences/org.cups.PrintingPrefs.plist
+
+As the default printer.
+
+If you want to set the default printer, you cannot use `lpoptions` or `lpadmin` to do it. The system preference pane
+primarily reads and writes to:
+
+    ~/.cups/lpoptions
+
+To determine the current default printer queue. You can make this file part of your login script or manage it using
+a commercial osx management solution.
+
+#### Vendor PPD Options
 
 The provider does not currently generate PPD files based upon the vendor supplied printer definition. This means that
 if the vendor has supplied a PPD with Apple extensions i.e You see a UI which allows you to pick printer features, then
