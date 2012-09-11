@@ -30,12 +30,12 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # A hash of type parameters to command line short switches.
   Cups_Options = {
-      :class       => '-c%s', # Not generally supported, but you can supply the class.
-      :model       => '-m%s', # Model parameter is not idempotent because cups won't report the model in lpstat
+      # :class       => '-c%s', # Unsupported, for now
+      :model       => '-m%s', # Not idempotent
       :uri         => '-v%s',
       :description => '-D%s',
       :location    => '-L%s',
-      :ppd         => '-P%s'  # This can be used in place of model, especially where the ppd has been customised.
+      :ppd         => '-P%s'  # Also not idempotent
   }
 
   # The instances method collects information through a number of different command line utilities because no single
@@ -84,17 +84,17 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   # Retrieve simple list of printer names
-  def self.printers
-    begin
-      printers = lpstat('-p').split("\n").map { |line|
-        line.match(/printer (.*) (is|disabled)/) {|m| # TODO: i18n
-          m.captures[0]
-        }
-      }.compact
-    rescue # Command returns error status when there are no cups queues
-      nil
-    end
-  end
+  #def self.printers
+  #  begin
+  #    printers = lpstat('-p').split("\n").map { |line|
+  #      line.match(/printer (.*) (is|disabled)/) {|m| # TODO: i18n
+  #        m.captures[0]
+  #      }
+  #    }.compact
+  #  rescue # Command returns error status when there are no cups queues
+  #    nil
+  #  end
+  #end
 
   # TODO: Needs a much more efficient way of parsing `lpstat -l -p` output.
   # TODO: i18n
@@ -198,7 +198,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
         # Handle most parameters via string substitution
         Cups_Options.keys.each do |k|
-          options.unshift Cups_Options[k] % @property_hash[k] if @property_hash.key?(k)
+          #options.unshift Cups_Options[k] % @property_hash[k] if @property_hash.key?(k)
+          options.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
 
         options.push '-o printer-is-shared=true' if @property_hash[:shared]
@@ -206,7 +207,11 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
-            options.push "-o %s='%s'" % k, v
+            # EB: Workaround for some command line options having 2 forms, short switch via lpadmin or
+            # long "option-name" via -o
+            next if k == 'device-uri'
+            next if k == 'printer-is-shared'
+            options.push "-o %s='%s'" % [k, v]
           end
         end
 

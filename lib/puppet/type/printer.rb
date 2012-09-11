@@ -23,14 +23,17 @@ Puppet::Type.newtype(:printer) do
     desc "Provides a textual location of the destination."
   end
 
-  newproperty(:model) do
+  # NOTE: model and ppd are parameters because they cannot be idempotent. CUPS will copy and rename the ppd
+  # upon printer creation (on mac os x at least), therefore: you can only change the model/ppd when the printer is
+  # created.
+  newparam(:model) do
     desc "Sets a standard System V interface script or PPD file for the printer from the model directory.
 
     Use the -m option with the lpinfo(8) command to get a list of supported models.
     "
   end
 
-  newproperty(:ppd) do
+  newparam(:ppd) do
     desc "Specifies a PostScript Printer Description file to use with the printer."
   end
 
