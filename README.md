@@ -115,6 +115,18 @@ primarily reads and writes to:
 To determine the current default printer queue. You can make this file part of your login script or manage it using
 a commercial osx management solution.
 
+#### Default Paper Size
+
+Again, OSX doesn't respect lpoptions when you set default page size via `lpoptions` or `lpadmin`.
+The file containing the actual default page size is:
+
+    ~/Library/Preferences/com.apple.print.PrintingPrefs.plist
+
+Under the plist key `DefaultPaperID`, which has a string that relates to a non-localised paper size. The PrintCore
+framework seems to have these listed in a binary plist under OSX 10.8. You can dump some localised strings using
+
+    /usr/libexec/plistbuddy -c "print" /System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/PrintCore.framework/Versions/Current/Resources/English.lproj/Localizable.strings
+
 #### Vendor PPD Options
 
 The provider does not currently generate PPD files based upon the vendor supplied printer definition. This means that
