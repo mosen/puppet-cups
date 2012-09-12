@@ -212,7 +212,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         begin
           # -E must always be the first switch to take effect.
           if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
-            lpadmin "-E", "-p", name, options
+            lpadmin "-p", name, "-E", options
           else
             lpadmin "-p", name, options
           end
