@@ -26,6 +26,11 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   commands :lpoptions => "/usr/bin/lpoptions"
   commands :lpstat => "/usr/bin/lpstat"
 
+  commands :cupsenable => "/usr/sbin/cupsenable"
+  commands :cupsdisable => "/usr/sbin/cupsdisable"
+  commands :cupsaccept => "/usr/sbin/cupsaccept"
+  commands :cupsreject => "/usr/sbin/cupsreject"
+
   mk_resource_methods
 
   # A hash of type parameters to command line short switches.
@@ -83,19 +88,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
   end
 
-  # Retrieve simple list of printer names
-  #def self.printers
-  #  begin
-  #    printers = lpstat('-p').split("\n").map { |line|
-  #      line.match(/printer (.*) (is|disabled)/) {|m| # TODO: i18n
-  #        m.captures[0]
-  #      }
-  #    }.compact
-  #  rescue # Command returns error status when there are no cups queues
-  #    nil
-  #  end
-  #end
-
   # TODO: Needs a much more efficient way of parsing `lpstat -l -p` output.
   # TODO: i18n
   def self.printers_long
@@ -124,7 +116,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
             printer[:location] = line.match(/\tLocation: (.*)/).captures[0]
           when /^\tInterface/
             printer[:ppd] = line.match(/\tInterface: (.*)/).captures[0]
-          when /^\tRejecting Jobs$/
+          when /^\tRejecting Jobs/
             printer[:accept] = :false
         end
       }
@@ -202,21 +194,43 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           options.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
 
-        options.push '-o printer-is-shared=true' if @property_hash[:shared]
-        options.push '-E' if @property_hash[:enabled]
+        options.push '-o printer-is-shared=true' if @property_hash[:shared] === :true
+
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
             # EB: Workaround for some command line options having 2 forms, short switch via lpadmin or
-            # long "option-name" via -o
+            # long "option-name" via -o. We don't want to allow setting of these options via -o
             next if k == 'device-uri'
             next if k == 'printer-is-shared'
+            next if k == 'printer-is-accepting-jobs'
+            next if k == 'printer-state' # causes reject/enable to be ignored
             options.push "-o %s='%s'" % [k, v]
           end
         end
 
         begin
-          lpadmin "-p", name, options
+          # -E must always be the first switch to take effect.
+          if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
+            lpadmin "-E", "-p", name, options
+          else
+            lpadmin "-p", name, options
+          end
+
+          # -E option covers enable & accept both true, and allows us to skip the other utilities.
+          #unless @property_hash[:enabled] === :true and @property_hash[:accept] === :true
+            if @property_hash[:enabled] === :true
+              cupsenable name
+            else
+              cupsdisable name
+            end
+
+            if @property_hash[:accept] === :true
+              cupsaccept name
+            else
+              cupsreject name
+            end
+          #end
         rescue Exception => e
           # If an option turns out to be invalid, CUPS will normally add the printer anyway.
           # Normally, the printer should not even be created, so we delete it again to make things consistent.
@@ -225,6 +239,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
           raise e
         end
+
+        # If not accepting & enabling, just perform the
     end
 
     @property_hash.clear
