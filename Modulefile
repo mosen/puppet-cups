@@ -1,5 +1,5 @@
 name 'mosen-cups'
-version '1.1.1'
+version '1.2.1'
 summary 'Manage printers and printer default options in CUPS'
 description 'Manage CUPS queues and default options via the CUPS command line utilities.'
 author 'mosen'
