@@ -51,7 +51,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     printers_long.each do |name, printer|
 
-      printer[:options] = self.printer_options(name)
+      # Temporarily disabling options in instances
+      #printer[:options] = self.printer_options(name)
       printer[:provider] = :cups
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
@@ -74,7 +75,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer = prefetched_printers[name]
 
         printer[:ensure] = :present
-        printer[:options] = self.printer_options(name)
+        printer[:options] = self.printer_options(name, resource)
         printer[:provider] = :cups
         printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
@@ -131,14 +132,16 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
 
-  # Retrieve options including whether the printer destination is shared.
-  def self.printer_options(destination)
+  # Retrieve options explicitly specified by the type definition.
+  def self.printer_options(destination, resource)
     options = {}
+
+    return options unless resource[:options].kind_of? Hash
 
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
     Shellwords.shellwords(lpoptions('-d', destination)).each do |kv|
       values = kv.split('=')
-      options[values[0]] = values[1]
+      options[values[0]] = values[1] if resource[:options].key? values[0]
     end
 
     options
@@ -186,16 +189,18 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
         # BUG: flush should never be called if only the model or PPD parameters differ, because lpstat can't tell
         # what the actual value is.
-        options = Array.new
+
+        params = Array.new # lpadmin parameters
+        options = Array.new # lpoptions parameters
 
         # Handle most parameters via string substitution
         Cups_Options.keys.each do |k|
-          #options.unshift Cups_Options[k] % @property_hash[k] if @property_hash.key?(k)
-          options.unshift Cups_Options[k] % @resource[k] if @resource[k]
+          params.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
 
-        options.push '-o printer-is-shared=true' if @property_hash[:shared] === :true
 
+
+        options.push '-o printer-is-shared=true' if @property_hash[:shared] === :true
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
@@ -210,11 +215,15 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         end
 
         begin
-          # -E must always be the first switch to take effect.
+          # -E means different things when it comes before or after -p, see man page for explanation.
           if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
-            lpadmin "-p", name, "-E", options
+            lpadmin "-p", name, "-E", params
           else
-            lpadmin "-p", name, options
+            lpadmin "-p", name, params
+          end
+
+          unless options.empty?
+            lpoptions "-p", name, options
           end
 
           # -E option covers enable & accept both true, and allows us to skip the other utilities.

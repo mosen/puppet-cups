@@ -58,7 +58,7 @@ Puppet::Type.newtype(:printer) do
     defaultto :false
   end
 
-  newparam(:options) do
+  newproperty(:options) do
     desc "Sets a list of PPD options for the printer"
 
     validate do |value|
