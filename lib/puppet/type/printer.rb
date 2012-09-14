@@ -59,10 +59,20 @@ Puppet::Type.newtype(:printer) do
   end
 
   newproperty(:options) do
-    desc "Sets a list of PPD options for the printer"
+    desc "Sets a list of options for the printer"
 
     validate do |value|
       raise ArgumentError, "invalid value supplied for printer options" unless value.is_a? Hash
+    end
+  end
+
+  newproperty(:ppd_options) do
+    desc "Sets a list of PPD (vendor specific) options for the printer.
+
+    Use lpoptions -p destination -l to get a list of valid vendor PPD options for that queue."
+
+    validate do |value|
+      raise ArgumentError, "invalid value supplied for printer PPD options" unless value.is_a? Hash
     end
   end
 

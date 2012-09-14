@@ -71,7 +71,8 @@ An example using almost every possible parameter:
                            # list of installed drivers.
         enabled     => true, # Enabled by default
         shared      => false, # Disabled by default
-        options     => { media => 'A4' }, # Hash of options ( name => value ), highly depends on the printer.
+        options     => { media => 'A4' }, # Hash of options ( name => value ), these are non vendor specific options.
+        ppd_options => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options
     }
 
 - The easiest way to find out a list of valid options for any single printer is to install that printer locally, and
