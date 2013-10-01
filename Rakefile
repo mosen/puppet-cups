@@ -17,6 +17,10 @@ end
 
 desc 'Generate code coverage'
 RSpec::Core::RakeTask.new(:coverage) do |t|
-  t.rcov = true
-  t.rcov_opts = ['--exclude', 'spec']
+  if RUBY_VERSION < '1.9'
+    t.rcov = true
+    t.rcov_opts = ['--exclude', 'spec']
+  else
+    ENV["COVERAGE"] = "true"
+  end
 end
