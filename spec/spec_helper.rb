@@ -1,3 +1,9 @@
+if RUBY_VERSION >= '1.9' && ENV['COVERAGE']
+  require 'simplecov'
+  SimpleCov.start do
+    add_filter 'spec'
+  end
+end
 dir = File.expand_path(File.dirname(__FILE__))
 $LOAD_PATH.unshift File.join(dir, 'lib')
 
