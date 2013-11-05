@@ -1,5 +1,6 @@
 # Create a fact which generates a list of comma separated printers
 Facter.add(:printers) do
+  confine :kernel => %w{Linux FreeBSD OpenBSD SunOS HP-UX Darwin GNU/kFreeBSD}
   setcode do
     ENV['LANG'] = 'C'
     if printers_list = Facter::Util::Resolution.exec("/usr/bin/lpstat -p 2>/dev/null")
