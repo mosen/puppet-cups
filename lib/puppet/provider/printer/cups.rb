@@ -26,10 +26,54 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   commands :lpoptions => "/usr/bin/lpoptions"
   commands :lpstat => "/usr/bin/lpstat"
 
-  commands :cupsenable => "/usr/sbin/cupsenable"
-  commands :cupsdisable => "/usr/sbin/cupsdisable"
-  commands :cupsaccept => "/usr/sbin/cupsaccept"
-  commands :cupsreject => "/usr/sbin/cupsreject"
+  #
+  # candidate locations for the enable command
+  # Solaris 11 & Illumos/OpenIndiana have /usr/bin/{enable,disable}
+  #
+  [ "/usr/sbin/cupsenable",
+    "/usr/bin/cupsenable", 
+    "/usr/sbin/enable",
+    "/usr/bin/enable"].each do |cups_command|
+    if File.exists?(cups_command)
+      commands :cupsenable => cups_command
+      break
+    end
+  end
+
+  [ "/usr/sbin/cupsdisable",
+    "/usr/bin/cupsdisable", 
+    "/usr/sbin/disable",
+    "/usr/bin/disable"].each do |cups_command|
+    if File.exists?(cups_command)
+      commands :cupsdisable => cups_command
+      break
+    end
+  end
+
+  #
+  # Candidate locations for the accept and reject commands
+  # Older Fedora and RHEL/CentOS 6.x and earlier have /usr/sbin/{accept,reject}
+  # Solaris 11 & Illumos/OpenIndiana have the same.
+  #
+  [ "/usr/sbin/cupsaccept",
+    "/usr/bin/cupsaccept", 
+    "/usr/sbin/accept",
+    "/usr/bin/accept"].each do |cups_command|
+    if File.exists?(cups_command)
+      commands :cupsaccept => cups_command
+      break
+    end
+  end
+
+  [ "/usr/sbin/cupsreject",
+    "/usr/bin/cupsreject", 
+    "/usr/sbin/reject",
+    "/usr/bin/reject"].each do |cups_command|
+    if File.exists?(cups_command)
+      commands :cupsreject => cups_command
+      break
+    end
+  end
 
   mk_resource_methods
 
