@@ -21,58 +21,27 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   The model cannot be determined after the printer has been created, so it usually can't be changed after you create
   a printer.
   "
+  # TODO: Needs more DRY in commands
 
-  commands :lpadmin => "/usr/sbin/lpadmin"
-  commands :lpoptions => "/usr/bin/lpoptions"
-  commands :lpstat => "/usr/bin/lpstat"
+  # Confine provider suitability to hosts that have all commands with or without the cups prefix
+  confine :exists => which("lpadmin")
+  confine :exists => which("lpoptions")
+  confine :exists => which("lpstat")
 
-  #
-  # candidate locations for the enable command
-  # Solaris 11 & Illumos/OpenIndiana have /usr/bin/{enable,disable}
-  #
-  [ "/usr/sbin/cupsenable",
-    "/usr/bin/cupsenable", 
-    "/usr/sbin/enable",
-    "/usr/bin/enable"].each do |cups_command|
-    if File.exists?(cups_command)
-      commands :cupsenable => cups_command
-      break
-    end
+  confine :true => begin
+    which("cupsenable") || which("enable")
   end
 
-  [ "/usr/sbin/cupsdisable",
-    "/usr/bin/cupsdisable", 
-    "/usr/sbin/disable",
-    "/usr/bin/disable"].each do |cups_command|
-    if File.exists?(cups_command)
-      commands :cupsdisable => cups_command
-      break
-    end
+  confine :true => begin
+    which("cupsdisable") || which("disable")
   end
 
-  #
-  # Candidate locations for the accept and reject commands
-  # Older Fedora and RHEL/CentOS 6.x and earlier have /usr/sbin/{accept,reject}
-  # Solaris 11 & Illumos/OpenIndiana have the same.
-  #
-  [ "/usr/sbin/cupsaccept",
-    "/usr/bin/cupsaccept", 
-    "/usr/sbin/accept",
-    "/usr/bin/accept"].each do |cups_command|
-    if File.exists?(cups_command)
-      commands :cupsaccept => cups_command
-      break
-    end
+  confine :true => begin
+    which("cupsaccept") || which("accept")
   end
 
-  [ "/usr/sbin/cupsreject",
-    "/usr/bin/cupsreject", 
-    "/usr/sbin/reject",
-    "/usr/bin/reject"].each do |cups_command|
-    if File.exists?(cups_command)
-      commands :cupsreject => cups_command
-      break
-    end
+  confine :true => begin
+    which("cupsreject") || which("reject")
   end
 
   mk_resource_methods
@@ -141,8 +110,10 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     begin
       printer = { :accept => :true } # Current printer entry being parsed
+      lpstat_cmd = which('lpstat') # TODO: DRY
 
-      lpstat('-l', '-p').split("\n").each { |line|
+      output = execute([lpstat_cmd, '-l', '-p'])
+      output.split("\n").each { |line|
         case line
           when /^printer/
 
@@ -184,8 +155,10 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     return options unless resource[:options].kind_of? Hash
 
+    lpoptions_cmd = which('lpoptions') # TODO: DRY
+
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
-    Shellwords.shellwords(lpoptions('-d', destination)).each do |kv|
+    Shellwords.shellwords(execute([lpoptions_cmd, '-d', destination])).each do |kv|
       values = kv.split('=')
       options[values[0]] = values[1] if resource[:options].key? values[0]
     end
@@ -200,7 +173,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     return ppdopts unless resource[:ppd_options].kind_of? Hash
 
-    lpoptions('-d', destination, '-l').each_line do |line|
+    lpoptions_cmd = which('lpoptions') # TODO: DRY
+
+    execute([lpoptions_cmd, '-d', destination, '-l']).each_line do |line|
       keyvalues = line.split(':')
       key = /^([^\/]*)/.match(keyvalues[0]).captures[0]
 
@@ -218,7 +193,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     begin
       uris = {}
 
-      lpstat('-v').split("\n").each { |line|
+      lpstat_cmd = which('lpstat') # TODO: DRY
+      execute([lpstat_cmd, '-v']).split("\n").each { |line|
         caps = line.match(/device for (.*): (.*)/).captures # TODO: i18n
         uris[caps[0]] = caps[1]
       }
@@ -247,10 +223,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   def flush
+    # TODO: DRY
+    lpadmin_cmd = which('lpadmin')
+    lpoptions_cmd = which('lpoptions')
 
     case @property_hash[:ensure]
       when :absent
-        lpadmin "-x", name
+        execute([lpadmin_cmd, '-x', name])
       when :present
         # Regardless of whether the printer is being added or modified, the `lpadmin -p` command is used.
         # Sometimes, in the case of `-E` or `-o` parameters, lpadmin seems to do nothing under some circumstances.
@@ -291,42 +270,47 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         begin
           # -E means different things when it comes before or after -p, see man page for explanation.
           if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
-            lpadmin "-p", name, "-E", params
+            execute([lpadmin_cmd, '-p', name, '-E']+params)
           else
-            lpadmin "-p", name, params
+            execute([lpadmin_cmd, '-p', name]+params)
           end
 
           unless options.empty?
-            lpoptions "-p", name, options
+            execute([lpoptions_cmd, '-p', name] + options)
           end
 
           unless vendor_options.empty?
-            lpoptions "-p", name, vendor_options
+            execute([lpoptions_cmd, '-p', name] + vendor_options)
           end
+
+          # TODO: dirty hack, needs rethinking.
+          enable_cmd = which('enable') || which('cupsenable')
+          disable_cmd = which('disable') || which('cupsdisable')
+          accept_cmd = which('accept') || which('cupsaccept')
+          reject_cmd = which('reject') || which('cupsreject')
 
           # Normally, the -E option would let us skip cupsenable/accept.
           # But the behaviour seems unpredictable when the queue already exists.
           if @property_hash[:enabled] === :true
-            cupsenable name
+            execute([enable_cmd, name])
           else
-            cupsdisable name
+            execute([disable_cmd, name])
           end
 
           if @property_hash[:accept] === :true
-            cupsaccept name
+            execute([accept_cmd, name])
           else
-            cupsreject name
+            execute([reject_cmd, name])
           end
         rescue Exception => e
           # If an option turns out to be invalid, CUPS will normally add the printer anyway.
           # Normally, the printer should not even be created, so we delete it again to make things consistent.
           debug 'Failed to add printer successfully, deleting destination. error: ' + e.message
-          lpadmin "-x", name
+
+          execute([lpadmin_cmd, '-x', name])
 
           raise e
         end
-
-        # If not accepting & enabling, just perform the
     end
 
     @property_hash.clear
