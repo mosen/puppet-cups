@@ -1,16 +1,13 @@
 # Create a fact which generates a list of comma separated printers
-require 'open3'
 Facter.add(:printers) do
+  confine :kernel => %w{Linux FreeBSD OpenBSD SunOS HP-UX Darwin GNU/kFreeBSD}
   setcode do
-
     ENV['LANG'] = 'C'
-    stdin, stdout, stderr = Open3.popen3('/usr/bin/lpstat -p')
-    printers = stdout.read
-    if stderr.read.empty?
-      printers = printers.split("\n").map do |line|
+    if printers_list = Facter::Util::Resolution.exec("/usr/bin/lpstat -p 2>/dev/null")
+      printers = printers_list.split("\n").map do |line|
         line.match(/printer (.*) is/).captures[0]
       end
-     printers.join(',')
+    printers.join(',')
     end
   end
 end
