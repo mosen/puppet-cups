@@ -37,6 +37,10 @@ Puppet::Type.newtype(:printer) do
     desc "Specifies a PostScript Printer Description file to use with the printer."
   end
 
+  newparam(:interface) do
+    desc "Specifies a System V interface file to use with the printer."
+  end
+
   newproperty(:enabled) do
     desc "Enables the destination and accepts jobs"
 
