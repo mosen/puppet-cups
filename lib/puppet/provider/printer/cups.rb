@@ -84,7 +84,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       :uri         => '-v%s',
       :description => '-D%s',
       :location    => '-L%s',
-      :ppd         => '-P%s'  # Also not idempotent
+      :ppd         => '-P%s', # Also not idempotent
+      :interface   => '-i%s' 
   }
 
   # The instances method collects information through a number of different command line utilities because no single
@@ -160,7 +161,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
             printer[:description] = line.match(/\tDescription: (.*)/).captures[0]
           when /^\tLocation/
             printer[:location] = line.match(/\tLocation: (.*)/).captures[0]
-          when /^\tInterface/
+          when /^\tInterface.*\/interface\/.*/
+            printer[:interface] = line.match(/\tInterface: (.*)/).captures[0]
+          when /^\tInterface.*\/ppd\/.*/
             printer[:ppd] = line.match(/\tInterface: (.*)/).captures[0]
           when /^\tRejecting Jobs/
             printer[:accept] = :false
@@ -220,7 +223,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
       lpstat('-v').split("\n").each { |line|
         caps = line.match(/device for (.*): (.*)/).captures # TODO: i18n
-        uris[caps[0]] = caps[1]
+        uris[caps[0]] = caps[1].gsub(/^\//, 'file:/')
       }
 
       uris
