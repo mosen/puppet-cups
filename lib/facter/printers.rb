@@ -5,7 +5,7 @@ Facter.add(:printers) do
     ENV['LANG'] = 'C'
     if printers_list = Facter::Util::Resolution.exec("/usr/bin/lpstat -p 2>/dev/null")
       printers = printers_list.split("\n").map do |line|
-        cap = line.match(/printer (.*) is/)
+        cap = line.match(/^printer (.*?) /)
         if cap.nil?
           nil
         else
