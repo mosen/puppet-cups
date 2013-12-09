@@ -5,9 +5,14 @@ Facter.add(:printers) do
     ENV['LANG'] = 'C'
     if printers_list = Facter::Util::Resolution.exec("/usr/bin/lpstat -p 2>/dev/null")
       printers = printers_list.split("\n").map do |line|
-        line.match(/printer (.*) is/).captures[0]
+        cap = line.match(/^printer (.*?) /)
+        if cap.nil?
+          nil
+        else
+          cap.captures[0]
+        end
       end
-    printers.join(',')
+      printers.compact.join(',')
     end
   end
 end
