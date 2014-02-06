@@ -7,6 +7,7 @@ node default {
         uri         => "http://localhost",
         description => "This is the printer description",
         location    => "John's office",
+        shared      => false,
     }
 
 }

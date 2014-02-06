@@ -271,7 +271,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           params.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
 
-        options.push '-o printer-is-shared=true' if @property_hash[:shared] === :true
+        if @resource[:shared] == :true
+          options.push '-o printer-is-shared=true'
+        end
+
+        if @resource[:shared] == :false
+          options.push '-o printer-is-shared=false'
+        end
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
