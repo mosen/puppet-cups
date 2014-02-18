@@ -102,7 +102,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
       # derived from options
-      printer[:shared] = printer[:options]['printer-is-shared']
+      # shared property is deprecated
+      # printer[:shared] = printer[:options]['printer-is-shared']
 
       provider_instances << new(printer)
     end
@@ -126,7 +127,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
         # derived from options
-        printer[:shared] = printer[:options]['printer-is-shared']
+        # shared property is deprecated
+        #printer[:shared] = printer[:options]['printer-is-shared']
 
         resource.provider = new(printer)
       else
@@ -271,20 +273,21 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           params.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
 
-        if @resource[:shared] == :true
-          options.push '-o printer-is-shared=true'
-        end
-
-        if @resource[:shared] == :false
-          options.push '-o printer-is-shared=false'
-        end
+        #if @resource[:shared] == :true
+        #  options.push '-o printer-is-shared=true'
+        #end
+        #
+        #if @resource[:shared] == :false
+        #  options.push '-o printer-is-shared=false'
+        #end
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
             # EB: Workaround for some command line options having 2 forms, short switch via lpadmin or
             # long "option-name" via -o. We don't want to allow setting of these options via -o
             next if k == 'device-uri'
-            next if k == 'printer-is-shared'
+            # you must now use printer-is-shared for sharing
+            #next if k == 'printer-is-shared'
             next if k == 'printer-is-accepting-jobs'
             next if k == 'printer-state' # causes reject/enable to be ignored
             options.push "-o %s='%s'" % [k, v]

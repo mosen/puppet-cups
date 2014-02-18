@@ -73,13 +73,13 @@ An example using almost every possible parameter:
         interface   => "/path/to/system/v/interface/file", # Interface script run for this destination
 
         enabled     => true, # Enabled by default
-        shared      => false, # Disabled by default
         options     => { media => 'A4' }, # Hash of options ( name => value ), these are non vendor specific options.
         ppd_options => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options
     }
 
 - The easiest way to find out a list of valid options for any single printer is to install that printer locally, and
 run `lpoptions -l` at the command line.
+- The `shared` option has been deprecated. Please use option `printer-is-shared=true/false`
 
 ### Facts
 
