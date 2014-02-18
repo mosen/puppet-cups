@@ -71,7 +71,7 @@ An example using almost every possible parameter:
                            # list of installed drivers.
         # OR
         interface   => "/path/to/system/v/interface/file", # Interface script run for this destination
-
+        shared      => false, # Printer will be shared and published by CUPS
         enabled     => true, # Enabled by default
         options     => { media => 'A4' }, # Hash of options ( name => value ), these are non vendor specific options.
         ppd_options => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options
@@ -79,7 +79,6 @@ An example using almost every possible parameter:
 
 - The easiest way to find out a list of valid options for any single printer is to install that printer locally, and
 run `lpoptions -l` at the command line.
-- The `shared` option has been deprecated. Please use option `printer-is-shared=true/false`
 
 ### Facts
 
