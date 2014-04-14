@@ -281,6 +281,16 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           params.push '-o printer-is-shared=false'
         end
 
+        # can't use puppet newvalues() with dashed keys
+        unless @resource[:error_policy].nil?
+          params.push "-o printer-error-policy=%s" % {
+              :abort_job => 'abort-job',
+              :retry_job => 'retry-job',
+              :retry_current_job => 'retry-current-job',
+              :stop_printer => 'stop-printer' }[@resource[:error_policy]]
+
+        end
+
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
             # EB: Workaround for some command line options having 2 forms, short switch via lpadmin or
@@ -289,6 +299,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
             next if k == 'printer-is-shared' # Cannot set unless you are creating the queue
             next if k == 'printer-is-accepting-jobs'
             next if k == 'printer-state' # causes reject/enable to be ignored
+            next if k == 'error-policy' # Cannot set unless you are creating the queue
             options.push "-o %s='%s'" % [k, v]
           end
         end

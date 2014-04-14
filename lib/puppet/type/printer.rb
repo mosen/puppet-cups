@@ -62,6 +62,12 @@ Puppet::Type.newtype(:printer) do
     defaultto :false
   end
 
+  newparam(:error_policy) do
+    desc "Set the error policy for this destination, one of: abort_job, retry_job, retry_current_job, or stop_printer"
+
+    newvalues(:abort_job, :retry_job, :retry_current_job, :stop_printer)
+  end
+
   newproperty(:options) do
     desc "Sets a list of options for the printer"
 

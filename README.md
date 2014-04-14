@@ -61,24 +61,28 @@ Removing the printer "Basic_Printer" from the previous example:
 An example using almost every possible parameter:
 
     printer { "Extended_Printer":
-        ensure      => present,
-        uri         => "lpd://localhost/printer_a",
-        description => "This is the printer description",
-        location    => "Main office",
-        ppd         => "/Library/Printers/PPDs/Printer.ppd", # Full path to vendor PPD
+        ensure       => present,
+        uri          => "lpd://localhost/printer_a",
+        description  => "This is the printer description",
+        location     => "Main office",
+        ppd          => "/Library/Printers/PPDs/Printer.ppd", # Full path to vendor PPD
         # OR
-        model       => "", # A valid model, you can list these with lpinfo -m, this is usually what you would call a
-                           # list of installed drivers.
+        model        => "", # A valid model, you can list these with lpinfo -m, this is usually what you would call a
+                            # list of installed drivers.
         # OR
-        interface   => "/path/to/system/v/interface/file", # Interface script run for this destination
-        shared      => false, # Printer will be shared and published by CUPS
-        enabled     => true, # Enabled by default
-        options     => { media => 'A4' }, # Hash of options ( name => value ), these are non vendor specific options.
-        ppd_options => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options
+        interface    => "/path/to/system/v/interface/file", # Interface script run for this destination
+        shared       => false, # Printer will be shared and published by CUPS
+        error_policy => abort_job, # underscored version of error policy
+        enabled      => true, # Enabled by default
+        options      => { media => 'A4' }, # Hash of options ( name => value ), these are non vendor specific options.
+        ppd_options  => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options
     }
 
 - The easiest way to find out a list of valid options for any single printer is to install that printer locally, and
 run `lpoptions -l` at the command line.
+- Note that some options like `shared` and `error_policy` are parameters available at creation time only. This is
+currently because lpadmin does not supply information about the current value of those options, so puppet won't know
+what to do in that instance.
 
 ### Facts
 
