@@ -302,13 +302,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         begin
           # -E means different things when it comes before or after -p, see man page for explanation.
           if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
-            lpadmin "-p", name, "-E", params
+            lpadmin "-p", name, "-E", params, options
           else
-            lpadmin "-p", name, params
-          end
-
-          unless options.empty?
-            lpoptions "-p", name, options
+            lpadmin "-p", name, params, options
           end
 
           unless vendor_options.empty?
@@ -336,8 +332,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
           raise e
         end
-
-        # If not accepting & enabling, just perform the
     end
 
     @property_hash.clear
