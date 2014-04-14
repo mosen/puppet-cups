@@ -190,7 +190,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     return options unless resource[:options].kind_of? Hash
 
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
-    Shellwords.shellwords(lpoptions('-d', destination)).each do |kv|
+    Shellwords.shellwords(lpoptions('-p', destination)).each do |kv|
       values = kv.split('=')
       options[values[0]] = values[1] if resource[:options].key? values[0]
     end
@@ -205,7 +205,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     return ppdopts unless resource[:ppd_options].kind_of? Hash
 
-    lpoptions('-d', destination, '-l').each_line do |line|
+    lpoptions('-p', destination, '-l').each_line do |line|
       keyvalues = line.split(':')
       key = /^([^\/]*)/.match(keyvalues[0]).captures[0]
 
