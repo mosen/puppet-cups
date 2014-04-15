@@ -88,6 +88,16 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       :interface   => '-i%s' 
   }
 
+  # Options only alterable via lpadmin
+  Admin_Options = %w{ device-uri printer-error-policy }
+
+  # Options that are actually not settable, or only settable upon creation
+  Immutable_Option_Blacklist = %w{ device-uri printer-is-accepting-jobs printer-state printer-error-policy marker-levels
+  marker-names marker-colors marker-types marker-change-time printer-state-change-time printer-commands }
+
+  # Options that have been made into resource definition properties
+  Option_Properties = %w{ printer-is-shared PageSize InputSlot Duplex ColorMode }
+
   # The instances method collects information through a number of different command line utilities because no single
   # utility displays all of the information about a printer's configuration.
   def self.instances
@@ -96,14 +106,21 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     printers_long.each do |name, printer|
 
-      # Temporarily disabling options in instances
-      #printer[:options] = self.printer_options(name)
+      options = self.printer_options(name, nil)
+
       printer[:provider] = :cups
+      printer[:ensure] = :present
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
-      # derived from options
-      # shared property is deprecated
-      # printer[:shared] = printer[:options]['printer-is-shared']
+      # Grab options that are set via properties or parameters
+      property_options = options.select { |k,v| Option_Properties.include? k }
+      options.reject! { |k,v| Option_Properties.include? k }
+
+      printer[:shared] = property_options['printer-is-shared'] if property_options.has_key? 'printer-is-shared'
+      printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
+      printer[:input_tray] = property_options['InputSlot'] if property_options.has_key? 'InputSlot'
+      printer[:duplex] = property_options['Duplex'] if property_options.has_key? 'Duplex'
+      printer[:color_mode] = property_options['ColorMode'] if property_options.has_key? 'ColorMode'
 
       provider_instances << new(printer)
     end
@@ -121,14 +138,29 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer = prefetched_printers[name]
 
         printer[:ensure] = :present
-        printer[:options] = self.printer_options(name, resource)
-        printer[:ppd_options] = self.ppd_options(name, resource)
         printer[:provider] = :cups
         printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
-        # derived from options
-        # shared property is deprecated
-        #printer[:shared] = printer[:options]['printer-is-shared']
+        # Fetch CUPS options set on this destination
+        # This includes options stated in `lpadmin` man page as well as non-default PPD options
+        options = self.printer_options(name, resource)
+
+        # Fetch PPD options with defaults and current values indicated by asterisk
+        ppd_options = self.ppd_options(name, resource)
+
+        # Grab options that are set via properties or parameters
+        property_options = options.select { |k,v| Option_Properties.include? k }
+        options.reject! { |k,v| Option_Properties.include? k }
+
+        printer[:shared] = property_options['printer-is-shared'] if property_options.has_key? 'printer-is-shared'
+        printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
+        printer[:input_tray] = property_options['InputSlot'] if property_options.has_key? 'InputSlot'
+        printer[:duplex] = property_options['Duplex'] if property_options.has_key? 'Duplex'
+        printer[:color_mode] = property_options['ColorMode'] if property_options.has_key? 'ColorMode'
+
+        # Set remaining unknown options on the resource
+        printer[:options] = options
+        printer[:ppd_options] = ppd_options
 
         resource.provider = new(printer)
       else
@@ -181,18 +213,16 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
   end
 
-
-  # I only retrieve options that are specified in the type definition, which avoids resetting all options at once.
+  # Only prefetch values for options that are specified in the resource definition!
   # queue options are space separated, and come in pairs separated by equals(=)
   def self.printer_options(destination, resource)
     options = {}
 
-    return options unless resource[:options].kind_of? Hash
-
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
     Shellwords.shellwords(lpoptions('-p', destination)).each do |kv|
       values = kv.split('=')
-      options[values[0]] = values[1] if resource[:options].key? values[0]
+      next if Immutable_Option_Blacklist.include? values[0]
+      options[values[0]] = values[1]
     end
 
     options
@@ -200,16 +230,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # vendor PPD options are formatted differently:
   # ShortName/Long Name: *Selected NotSelectedValue
+  # If something other than the default is selected, it turns up in lpoptions -p
   def self.ppd_options(destination, resource)
     ppdopts = {}
-
-    return ppdopts unless resource[:ppd_options].kind_of? Hash
 
     lpoptions('-p', destination, '-l').each_line do |line|
       keyvalues = line.split(':')
       key = /^([^\/]*)/.match(keyvalues[0]).captures[0]
-
-      next unless resource[:ppd_options].key? key
 
       selected_value = /\s\*([^\s]*)\s/.match(keyvalues[1]).captures[0]
 
@@ -264,49 +291,59 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         # BUG: flush should never be called if only the model or PPD parameters differ, because lpstat can't tell
         # what the actual value is.
 
-        params = Array.new # lpadmin parameters
-        options = Array.new # lpoptions parameters
-        vendor_options = Array.new # ppd options
+        params = Array.new
+        options = Array.new
+        vendor_options = Array.new
 
-        # Handle most parameters via string substitution
+        # Short form lpadmin parameters
         Cups_Options.keys.each do |k|
           params.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
 
-        if @resource[:shared] == :true
-          params.push '-o printer-is-shared=true'
+
+        unless @resource[:shared].nil?
+          params.push "-o printer-is-shared=%s" % ((@resource[:shared] == :true) ? "true" : "false")
         end
 
-        if @resource[:shared] == :false
-          params.push '-o printer-is-shared=false'
-        end
-
-        # can't use puppet newvalues() with dashed keys
         unless @resource[:error_policy].nil?
           params.push "-o printer-error-policy=%s" % {
               :abort_job => 'abort-job',
               :retry_job => 'retry-job',
               :retry_current_job => 'retry-current-job',
               :stop_printer => 'stop-printer' }[@resource[:error_policy]]
-
         end
+
+        # Common PPD Options
+        # lpoptions will happily set any of the values without complaining if the value is totally useless.
+
+        unless @property_hash[:page_size].nil?
+          vendor_options.push "-o PageSize=%s" % @property_hash[:page_size]
+        end
+
+        unless @property_hash[:input_tray].nil?
+          vendor_options.push "-o InputSlot=%s" % @property_hash[:input_tray]
+        end
+
+        unless @property_hash[:color_mode].nil?
+          vendor_options.push "-o ColorMode=%s" % @property_hash[:color_mode]
+        end
+
+        unless @property_hash[:duplex].nil?
+          vendor_options.push "-o Duplex=%s" % @property_hash[:duplex]
+        end
+
+        # Generic Options
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
-            # EB: Workaround for some command line options having 2 forms, short switch via lpadmin or
-            # long "option-name" via -o. We don't want to allow setting of these options via -o
-            next if k == 'device-uri'
-            next if k == 'printer-is-shared' # Cannot set unless you are creating the queue
-            next if k == 'printer-is-accepting-jobs'
-            next if k == 'printer-state' # causes reject/enable to be ignored
-            next if k == 'error-policy' # Cannot set unless you are creating the queue
+            next if Immutable_Option_Blacklist.include? k
             options.push "-o %s='%s'" % [k, v]
           end
         end
 
         if @property_hash[:ppd_options].is_a? Hash
           @property_hash[:ppd_options].each_pair do |k, v|
-            vendor_options.push "-o %s=%s" % [k, v]
+            #vendor_options.push "-o %s=%s" % [k, v]
           end
         end
 

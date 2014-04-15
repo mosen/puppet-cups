@@ -62,6 +62,8 @@ Puppet::Type.newtype(:printer) do
     defaultto :false
   end
 
+  # Error policy is a parameter because it is not displayed in the output of
+  # lpoptions -p or lpoptions -p -l, so it cannot be idempotent.
   newparam(:error_policy) do
     desc "Set the error policy for this destination, one of: abort_job, retry_job, retry_current_job, or stop_printer"
 
@@ -84,6 +86,24 @@ Puppet::Type.newtype(:printer) do
     validate do |value|
       raise ArgumentError, "invalid value supplied for printer PPD options" unless value.is_a? Hash
     end
+  end
+
+  # Standard PPD Options
+
+  newproperty(:input_tray) do
+    desc "Set the input slot/input tray (Value depends on PPD)"
+  end
+
+  newproperty(:duplex) do
+    desc "Set duplex mode (Value depends on PPD)"
+  end
+  #
+  newproperty(:page_size) do
+    desc "Set the page size (Value depends on PPD)"
+  end
+  #
+  newproperty(:color_mode) do
+    desc "Set the color mode (Value depends on PPD)"
   end
 
   # Allow a printer resource without explicitly specifying a file resource for the PPD.
