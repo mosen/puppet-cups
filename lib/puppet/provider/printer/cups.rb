@@ -88,8 +88,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       :interface   => '-i%s' 
   }
 
-  # Options only alterable via lpadmin
-  Admin_Options = %w{ device-uri printer-error-policy }
+  # Options only alterable via lpadmin -p
+  Admin_Options = %w{ device-uri printer-error-policy printer-is-shared job-sheets-default }
 
   # Options that are actually not settable, or only settable upon creation
   Immutable_Option_Blacklist = %w{ device-uri printer-is-accepting-jobs printer-state printer-error-policy marker-levels
