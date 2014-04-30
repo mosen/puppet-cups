@@ -163,3 +163,17 @@ Install the necessary gems:
 And run the tests from the root of the source code:
 
     rake test
+
+#### Acceptance Tests
+
+You probably won't want to run full acceptance tests due to the amount of time involved pulling down vagrant boxes, but
+you can execute the beaker tests starting with:
+
+    BEAKER_destroy=no bundle exec rspec spec/acceptance
+
+And then re-use the provisioned guests with
+
+    BEAKER_destroy=no BEAKER_provision=no bundle exec rspec spec/acceptance
+
+Unset `BEAKER_destroy` after testing has finished or VM is dirty for the purposes of testing.
+
