@@ -6,9 +6,10 @@ describe 'CUPS printer resource type' do
     let(:manifest) {
       <<-EOS
         printer { 'cups_printer_add_0':
-          ensure      => present,
-          model       => 'drv:///sample.drv/deskjet.ppd',
-          description => 'Generic Test Printer',
+          ensure       => present,
+          model        => 'drv:///sample.drv/deskjet.ppd',
+          description  => 'Generic Test Printer',
+          error_policy => stop_printer,
         }
       EOS
     }
@@ -81,6 +82,43 @@ describe 'CUPS printer resource type' do
     end
   end
 
+  describe 'when disabling printer sharing' do
+    let(:manifest) {
+      <<-EOS
+       printer { 'cups_printer_add_0':
+         ensure => present,
+         shared => false,
+       }
+      EOS
+    }
 
+    it 'should complete with no errors' do
+      apply_manifest(manifest, :catch_failures => true)
+    end
 
+    it 'should be idempotent' do
+      expect(apply_manifest(manifest, :catch_failures => true).exit_code).to be_zero
+    end
+
+    it 'should display printer-is-shared=false as a part of the destination options' do
+      expect(shell("lpoptions -p cups_printer_add_0").stdout).to include("printer-is-shared=false")
+    end
+  end
+
+  describe 'when modifying the location' do
+    let(:manifest) {
+      <<-EOS
+       printer { 'cups_printer_add_0':
+         ensure   => present,
+         location => "TEST LOCATION",
+       }
+      EOS
+    }
+
+  end
+
+  after(:all) do
+    # Clean up tests for re-run
+    shell("lpadmin -x cups_printer_add_0")
+  end
 end
