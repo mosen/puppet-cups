@@ -53,7 +53,7 @@ describe 'CUPS printer resource type' do
     end
 
     it 'should display the newly updated description' do
-      shell("lpstat -l -p cups_printer_add_0 |egrep 'Generic Test Printer MODIFIED'", :acceptable_exit_codes => 0)
+      expect(shell("lpstat -l -p cups_printer_add_0 |grep 'Description:'").stdout).to include("Generic Test Printer MODIFIED")
     end
 
   end
@@ -77,8 +77,10 @@ describe 'CUPS printer resource type' do
     end
 
     it 'should display the newly set uri in `lpstat -v`' do
-      shell("lpstat -v cups_printer_add_0 |grep 'lpd://10.10.10.10/test'", :acceptable_exit_codes => 0)
+      expect(shell("lpstat -v cups_printer_add_0", :acceptable_exit_codes => 0)).to include("lpd://10.10.10.10/test")
     end
   end
+
+
 
 end

@@ -112,9 +112,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       printer[:ensure] = :present
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
-      # Grab options that are set via properties or parameters
-      property_options = options.select { |k,v| Option_Properties.include? k }
-      options.reject! { |k,v| Option_Properties.include? k }
+      # Grab options that are set via properties or parameters and reject them from the list of settable options
+      property_options = options.reject! { |k,v| Option_Properties.include? k }
 
       printer[:shared] = property_options['printer-is-shared'] if property_options.has_key? 'printer-is-shared'
       printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
