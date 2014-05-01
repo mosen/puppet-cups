@@ -77,7 +77,7 @@ describe 'CUPS printer resource type' do
     end
 
     it 'should display the newly set uri in `lpstat -v`' do
-      expect(shell("lpstat -v cups_printer_add_0", :acceptable_exit_codes => 0)).to include("lpd://10.10.10.10/test")
+      expect(shell("lpstat -v cups_printer_add_0", :acceptable_exit_codes => 0).stdout).to include("lpd://10.10.10.10/test")
     end
   end
 

@@ -9,7 +9,8 @@ hosts.each do |host|
 
   # Install CUPS and start service
   install_package host, 'cups'
-  puppet_resource('service cups ensure=running enable=true')
+  on host, puppet("resource service cups ensure=running enable=true")
+
 end
 
 RSpec.configure do |c|
