@@ -1,5 +1,10 @@
 ## puppet-cups module
 
+## Important
+
+After git tag 1.4.0_RC1 I have made a non-backwards compatible change to the way ppd_options and options parameters
+work. If you want to use the old behavior, please use tag 1.4.0_RC1 or 1.3.0
+
 ## User Guide
 
 ### Overview
