@@ -71,15 +71,16 @@ Puppet::Type.newtype(:printer) do
   end
 
   newproperty(:options) do
-    desc "Sets a list of options for the printer"
+    desc "Sets a list of options for the printer using lpoptions. These options may only apply to lp/lpr jobs submitted
+    locally"
 
     validate do |value|
       raise ArgumentError, "invalid value supplied for printer options" unless value.is_a? Hash
     end
   end
 
-  newproperty(:ppd_options) do
-    desc "Sets a list of PPD (vendor specific) options for the printer.
+  newparam(:ppd_options) do
+    desc "Set additional PPD options for this printer. These are only set upon creation.
 
     Use lpoptions -p destination -l to get a list of valid vendor PPD options for that queue."
 
@@ -88,21 +89,21 @@ Puppet::Type.newtype(:printer) do
     end
   end
 
-  # Standard PPD Options
+  # Standard PPD Options - Only set on creation
 
-  newproperty(:input_tray) do
+  newparam(:input_tray) do
     desc "Set the input slot/input tray (Value depends on PPD)"
   end
 
-  newproperty(:duplex) do
+  newparam(:duplex) do
     desc "Set duplex mode (Value depends on PPD)"
   end
   #
-  newproperty(:page_size) do
+  newparam(:page_size) do
     desc "Set the page size (Value depends on PPD)"
   end
   #
-  newproperty(:color_mode) do
+  newparam(:color_mode) do
     desc "Set the color mode (Value depends on PPD)"
   end
 

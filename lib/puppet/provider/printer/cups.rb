@@ -91,11 +91,11 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # Options only alterable via lpadmin -p
   Admin_Options = %w{ device-uri printer-error-policy printer-is-shared job-sheets-default }
 
-  # Options that are actually not settable, or only settable upon creation
+  # Options that are actually not settable, or only settable upon creation. Used to filter the fetch list of options
   Immutable_Option_Blacklist = %w{ device-uri printer-is-accepting-jobs printer-state printer-error-policy marker-levels
   marker-names marker-colors marker-types marker-change-time printer-state-change-time printer-commands }
 
-  # Options that have been made into resource definition properties
+  # Options that have been made into resource definition properties, so they are excluded from options/ppd_options output
   Option_Properties = %w{ printer-is-shared PageSize InputSlot Duplex ColorMode }
 
   # The instances method collects information through a number of different command line utilities because no single
@@ -283,11 +283,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         lpadmin "-x", name
       when :present
         # Regardless of whether the printer is being added or modified, the `lpadmin -p` command is used.
-        # Sometimes, in the case of `-E` or `-o` parameters, lpadmin seems to do nothing under some circumstances.
-        # For this reason, I'm running cupsenable/reject and lpoptions to ensure those values match what we expect.
-
-        # BUG: flush should never be called if only the model or PPD parameters differ, because lpstat can't tell
-        # what the actual value is.
+        # Some parameters to lpadmin only apply on creation such as PPD specific options. Others can be modified
+        # after the destination has been created.
 
         params = Array.new
         options = Array.new
@@ -297,7 +294,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         Cups_Options.keys.each do |k|
           params.unshift Cups_Options[k] % @resource[k] if @resource[k]
         end
-
 
         unless @resource[:shared].nil?
           params.push "-o printer-is-shared=%s" % ((@resource[:shared] == :true) ? "true" : "false")
@@ -312,22 +308,23 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         end
 
         # Common PPD Options
-        # lpoptions will happily set any of the values without complaining if the value is totally useless.
+        # `lpadmin` will happily set any of the values without complaining if the value is totally useless.
+        # It is up to the user to verify that the PPD supports the named value.
 
-        unless @property_hash[:page_size].nil?
-          vendor_options.push "-o PageSize=%s" % @property_hash[:page_size]
+        unless @resource[:page_size].nil?
+          vendor_options.push "-o PageSize=%s" % @resource[:page_size]
         end
 
-        unless @property_hash[:input_tray].nil?
-          vendor_options.push "-o InputSlot=%s" % @property_hash[:input_tray]
+        unless @resource[:input_tray].nil?
+          vendor_options.push "-o InputSlot=%s" % @resource[:input_tray]
         end
 
-        unless @property_hash[:color_mode].nil?
-          vendor_options.push "-o ColorMode=%s" % @property_hash[:color_mode]
+        unless @resource[:color_mode].nil?
+          vendor_options.push "-o ColorMode=%s" % @resource[:color_mode]
         end
 
-        unless @property_hash[:duplex].nil?
-          vendor_options.push "-o Duplex=%s" % @property_hash[:duplex]
+        unless @resource[:duplex].nil?
+          vendor_options.push "-o Duplex=%s" % @resource[:duplex]
         end
 
         # Generic Options
@@ -339,18 +336,18 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           end
         end
 
-        if @property_hash[:ppd_options].is_a? Hash
-          @property_hash[:ppd_options].each_pair do |k, v|
-            #vendor_options.push "-o %s=%s" % [k, v]
+        if @resource[:ppd_options].is_a? Hash
+          @resource[:ppd_options].each_pair do |k, v|
+            vendor_options.push "-o %s=%s" % [k, v]
           end
         end
 
         begin
           # -E means different things when it comes before or after -p, see man page for explanation.
           if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
-            lpadmin "-p", name, "-E", params, options
+            lpadmin "-p", name, "-E", params, vendor_options
           else
-            lpadmin "-p", name, params, options
+            lpadmin "-p", name, params, vendor_options
           end
 
           unless vendor_options.empty?

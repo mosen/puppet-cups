@@ -7,9 +7,9 @@
 This type provides the ability to manage cups printers and options.
 
 Limitations:
+
 + It currently does not support classes.
 + It currently does not set default printers.
-+ It does not set vendor ppd options (where an external process is responsible for modifying the ppd).
 
 ### Installation
 
@@ -18,7 +18,7 @@ You can install the latest release version from the module forge by executing th
     puppet module install mosen-cups
 
 If you are feeling brave, or want to test the version in development you can clone the github repository into
-your module path.
+your module path. There is no guarantee that the most recent source repository will be workable.
 
 This module provides new types in the form of plugins, so pluginsync must be enabled for every agent in the
 puppet configuration (usually /etc/puppet/puppet.conf) like this:
@@ -26,8 +26,7 @@ puppet configuration (usually /etc/puppet/puppet.conf) like this:
     [agent]
     pluginsync = true
 
-Without pluginsync enabled, any manifest with a `printer` resource in it will throw an error
-or possibly just do nothing.
+Without pluginsync enabled, any manifest with a `printer` resource in it will throw an error.
 
 ### Examples
 
@@ -39,7 +38,8 @@ The most basic printer install possible:
         ensure      => present,
         uri         => "lpd://hostname/printer_a",
         description => "This is the printer description",
-        ppd         => "/Library/Printers/PPDs/Printer.ppd", # PPD file will be autorequired
+        ppd         => "/Library/Printers/PPDs/Printer.ppd", # OR
+        model       => "drv:///sample.drv/okidata9.ppd", # Model from `lpinfo -m`
     }
 
 - The uri identifies how you will connect to the printer. running `lpinfo -v` at the command line will give you some
@@ -74,15 +74,14 @@ An example using almost every possible parameter:
         shared       => false, # Printer will be shared and published by CUPS
         error_policy => abort_job, # underscored version of error policy
         enabled      => true, # Enabled by default
-        options      => { media => 'A4' }, # Hash of options ( name => value ), these are non vendor specific options.
-        ppd_options  => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options
+        options      => { media => 'A4' }, # Hash of options ( name => value ), these are lpoptions, be aware that not
+                                           # all applications will even use the lpoptions file.
+        ppd_options  => { 'HPOption_Duplexer' => 'False' }, # Hash of vendor PPD options, set on creation.
     }
 
-- The easiest way to find out a list of valid options for any single printer is to install that printer locally, and
-run `lpoptions -l` at the command line.
-- Note that some options like `shared` and `error_policy` are parameters available at creation time only. This is
-currently because lpadmin does not supply information about the current value of those options, so puppet won't know
-what to do in that instance.
+- To find valid ppd_options values for a printer, install it locally using the vendor supplied PPD and
+run `lpoptions -p <dest> -l`. You can also read the PPD if that's your thing.
+- Note that some options like `shared` and `error_policy` are parameters available at creation time only.
 
 ### Facts
 
@@ -114,13 +113,8 @@ If you select "Last Used Printer", it will select the printer in:
 
 As the default printer.
 
-If you want to set the default printer, you cannot use `lpoptions` or `lpadmin` to do it. The system preference pane
-primarily reads and writes to:
-
-    ~/.cups/lpoptions
-
-To determine the current default printer queue. You can make this file part of your login script or manage it using
-a commercial osx management solution.
+If you want to set the default printer, you probably shouldn't use `lpoptions` because it only governs the default
+when submitting jobs under certain circumstances.
 
 #### Default Paper Size
 
@@ -136,13 +130,9 @@ framework seems to have these listed in a binary plist under OSX 10.8. You can d
 
 #### Vendor PPD Options
 
-The provider does not currently generate PPD files based upon the vendor supplied printer definition. This means that
-if the vendor has supplied a PPD with Apple extensions i.e You see a UI which allows you to pick printer features, then
-you need to generate your own ppd first for distribution.
-
-I would recommend doing a manual installation of the printer with the customizations from the ui picker, and then using
-the resulting PPD as the printer description. On OS X you can retrieve the ppd from /private/etc/cups/ppd after you have
-customized the printer features.
+The provider only alters PPD options on creation due to the way that `lpadmin` works. There seems to be no command line
+interface for the direct modification of PPD files contained in `/etc/cups/ppd`. The CUPS web interface does however
+provide the means to modify PPD options after the printer has been added.
 
 ### Contributing
 
