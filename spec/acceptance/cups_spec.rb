@@ -117,8 +117,35 @@ describe 'CUPS printer resource type' do
 
   end
 
+  describe 'when adding a generic queue with the page_size option set to `A4`' do
+    let(:manifest) {
+      <<-EOS
+       printer { 'cups_printer_add_pagesize':
+          ensure       => present,
+          model        => 'drv:///sample.drv/deskjet.ppd',
+          description  => 'Generic Test Printer PageSize',
+          page_size    => 'A4',
+       }
+      EOS
+    }
+
+    it 'should complete with no errors' do
+      apply_manifest(manifest, :catch_failures => true)
+    end
+
+    it 'should be idempotent' do
+      expect(apply_manifest(manifest, :catch_failures => true).exit_code).to be_zero
+    end
+
+    it 'should display PageSize=A4 as part of the PPD options' do
+      expect(shell("lpoptions -p cups_printer_add_pagesize -l").stdout).to include("*A4")
+    end
+
+  end
+
   after(:all) do
     # Clean up tests for re-run
     shell("lpadmin -x cups_printer_add_0")
+    shell("lpadmin -x cups_printer_add_pagesize")
   end
 end
