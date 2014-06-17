@@ -1,0 +1,9 @@
+{
+    "name" : "mosen-cups",
+    "version" : "1.3.0",
+    "author" : "mosen",
+    "license" : "MIT",
+    "summary" : "Manage printers using the cups admin tools",
+    "source" : "https://github.com/mosen/puppet-cups.git",
+    "issues_url" : "https://github.com/mosen/puppet-cups/issues"
+}

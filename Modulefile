@@ -1,6 +1,6 @@
 name 'mosen-cups'
 version '1.3.0'
-summary 'Manage printers and printer default options in CUPS'
+summary 'Manage printers using the cups admin tools'
 description 'Manage CUPS queues and default options via the CUPS command line utilities.'
 author 'mosen'
 source 'https://github.com/mosen/puppet-cups.git'
