@@ -31,7 +31,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # Solaris 11 & Illumos/OpenIndiana have /usr/bin/{enable,disable}
   #
   [ "/usr/sbin/cupsenable",
-    "/usr/bin/cupsenable", 
+    "/usr/bin/cupsenable",
     "/usr/sbin/enable",
     "/usr/bin/enable"].each do |cups_command|
     if File.exists?(cups_command)
@@ -41,7 +41,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   [ "/usr/sbin/cupsdisable",
-    "/usr/bin/cupsdisable", 
+    "/usr/bin/cupsdisable",
     "/usr/sbin/disable",
     "/usr/bin/disable"].each do |cups_command|
     if File.exists?(cups_command)
@@ -56,7 +56,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # Solaris 11 & Illumos/OpenIndiana have the same.
   #
   [ "/usr/sbin/cupsaccept",
-    "/usr/bin/cupsaccept", 
+    "/usr/bin/cupsaccept",
     "/usr/sbin/accept",
     "/usr/bin/accept"].each do |cups_command|
     if File.exists?(cups_command)
@@ -66,7 +66,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   [ "/usr/sbin/cupsreject",
-    "/usr/bin/cupsreject", 
+    "/usr/bin/cupsreject",
     "/usr/sbin/reject",
     "/usr/bin/reject"].each do |cups_command|
     if File.exists?(cups_command)
@@ -85,7 +85,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       :description => '-D%s',
       :location    => '-L%s',
       :ppd         => '-P%s', # Also not idempotent
-      :interface   => '-i%s' 
+      :interface   => '-i%s'
   }
 
   # Options only alterable via lpadmin -p
@@ -96,7 +96,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   marker-names marker-colors marker-types marker-change-time printer-state-change-time printer-commands }
 
   # Options that have been made into resource definition properties, so they are excluded from options/ppd_options output
-  Option_Properties = %w{ printer-is-shared PageSize InputSlot Duplex ColorMode }
+  Option_Properties = %w{ printer-is-shared PageSize InputSlot Duplex ColorModel }
 
   # The instances method collects information through a number of different command line utilities because no single
   # utility displays all of the information about a printer's configuration.
@@ -119,7 +119,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
       printer[:input_tray] = property_options['InputSlot'] if property_options.has_key? 'InputSlot'
       printer[:duplex] = property_options['Duplex'] if property_options.has_key? 'Duplex'
-      printer[:color_mode] = property_options['ColorMode'] if property_options.has_key? 'ColorMode'
+      printer[:color_model] = property_options['ColorModel'] if property_options.has_key? 'ColorModel'
 
       provider_instances << new(printer)
     end
@@ -154,7 +154,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
         printer[:input_tray] = property_options['InputSlot'] if property_options.has_key? 'InputSlot'
         printer[:duplex] = property_options['Duplex'] if property_options.has_key? 'Duplex'
-        printer[:color_mode] = property_options['ColorMode'] if property_options.has_key? 'ColorMode'
+        printer[:color_model] = property_options['ColorModel'] if property_options.has_key? 'ColorModel'
 
         # Set remaining unknown options on the resource
         printer[:options] = options
@@ -319,8 +319,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           vendor_options.push "-o InputSlot=%s" % @resource[:input_tray]
         end
 
-        unless @resource[:color_mode].nil?
-          vendor_options.push "-o ColorMode=%s" % @resource[:color_mode]
+        unless @resource[:color_model].nil?
+          vendor_options.push "-o ColorModel=%s" % @resource[:color_model]
         end
 
         unless @resource[:duplex].nil?

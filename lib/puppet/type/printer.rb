@@ -103,8 +103,8 @@ Puppet::Type.newtype(:printer) do
     desc "Set the page size (Value depends on PPD)"
   end
   #
-  newparam(:color_mode) do
-    desc "Set the color mode (Value depends on PPD)"
+  newparam(:color_model) do
+    desc "Set the color model (CMY, CMYK, RGB, Gray)"
   end
 
   # Allow a printer resource without explicitly specifying a file resource for the PPD.
