@@ -4,4 +4,5 @@ class cups::params {
     $enable         = true
     $source         = ''
     $package_name   = 'cups'
+    $package_devel  = "${package_name}-devel"
 }
