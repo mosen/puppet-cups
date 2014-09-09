@@ -354,7 +354,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
           end
 
           unless vendor_options.empty?
-            lpoptions "-p", name, vendor_options
+            lpadmin "-p", name, vendor_options
           end
 
           # Normally, the -E option would let us skip cupsenable/accept.
