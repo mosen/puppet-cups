@@ -106,20 +106,24 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
     printers_long.each do |name, printer|
 
-      options = self.printer_options(name, nil)
-
-      printer[:provider] = :cups
       printer[:ensure] = :present
+      printer[:provider] = :cups
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
-      # Grab options that are set via properties or parameters and reject them from the list of settable options
-      property_options = options.reject! { |k,v| Option_Properties.include? k }
-
-      printer[:shared] = property_options['printer-is-shared'] if property_options.has_key? 'printer-is-shared'
-      printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
-      printer[:input_tray] = property_options['InputSlot'] if property_options.has_key? 'InputSlot'
-      printer[:duplex] = property_options['Duplex'] if property_options.has_key? 'Duplex'
-      printer[:color_model] = property_options['ColorModel'] if property_options.has_key? 'ColorModel'
+      # Fetch CUPS options set on this destination
+      # This includes options stated in `lpadmin` man page as well as non-default PPD options
+      options = self.printer_options(name, nil)
+      
+      # Grab options that are set via properties or parameters
+      printer[:shared] = options['printer-is-shared'] if options.has_key? 'printer-is-shared'
+      printer[:page_size] = options['PageSize'] if options.has_key? 'PageSize'
+      printer[:input_tray] = options['InputSlot'] if options.has_key? 'InputSlot'
+      printer[:duplex] = options['Duplex'] if options.has_key? 'Duplex'
+      printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
+      
+      # and reject them from the list of settable options
+      options.reject! { |k,v| Option_Properties.include? k }
+      printer[:options] = options
 
       provider_instances << new(printer)
     end
@@ -144,20 +148,19 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         # This includes options stated in `lpadmin` man page as well as non-default PPD options
         options = self.printer_options(name, resource)
 
+        # Grab options that are set via properties or parameters
+        printer[:shared] = options['printer-is-shared'] if options.has_key? 'printer-is-shared'
+        printer[:page_size] = options['PageSize'] if options.has_key? 'PageSize'
+        printer[:input_tray] = options['InputSlot'] if options.has_key? 'InputSlot'
+        printer[:duplex] = options['Duplex'] if options.has_key? 'Duplex'
+        printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
+      
+        # and reject them from the list of settable options
+        options = options.reject! { |k,v| Option_Properties.include? k }
+        printer[:options] = options
+
         # Fetch PPD options with defaults and current values indicated by asterisk
         ppd_options = self.ppd_options(name, resource)
-
-        # Grab options that are set via properties or parameters and reject them from the list of settable options
-        property_options = options.reject! { |k,v| Option_Properties.include? k }
-
-        printer[:shared] = property_options['printer-is-shared'] if property_options.has_key? 'printer-is-shared'
-        printer[:page_size] = property_options['PageSize'] if property_options.has_key? 'PageSize'
-        printer[:input_tray] = property_options['InputSlot'] if property_options.has_key? 'InputSlot'
-        printer[:duplex] = property_options['Duplex'] if property_options.has_key? 'Duplex'
-        printer[:color_model] = property_options['ColorModel'] if property_options.has_key? 'ColorModel'
-
-        # Set remaining unknown options on the resource
-        printer[:options] = options
         printer[:ppd_options] = ppd_options
 
         resource.provider = new(printer)
