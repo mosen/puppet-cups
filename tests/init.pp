@@ -7,6 +7,7 @@ node default {
         uri          => "http://localhost",
         description  => "This is the printer description",
         location     => "John's office",
+        model        => 'drv:///sample.drv/generic.ppd',
         shared       => false,
         error_policy => abort_job,
     }
