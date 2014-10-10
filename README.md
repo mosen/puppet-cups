@@ -22,16 +22,7 @@ You can install the latest release version from the module forge by executing th
 
     puppet module install mosen-cups
 
-If you are feeling brave, or want to test the version in development you can clone the github repository into
-your module path. There is no guarantee that the most recent source repository will be workable.
-
-This module provides new types in the form of plugins, so pluginsync must be enabled for every agent in the
-puppet configuration (usually /etc/puppet/puppet.conf) like this:
-
-    [agent]
-    pluginsync = true
-
-Without pluginsync enabled, any manifest with a `printer` resource in it will throw an error.
+You can also clone the source repository into your module path, but be aware that HEAD is sometimes broken.
 
 ### Examples
 
