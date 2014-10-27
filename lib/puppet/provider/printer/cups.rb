@@ -357,6 +357,10 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
             lpadmin "-p", name, vendor_options
           end
 
+          unless options.empty?
+            lpadmin "-p", name, options
+          end
+
           # Normally, the -E option would let us skip cupsenable/accept.
           # But the behaviour seems unpredictable when the queue already exists.
           if @property_hash[:enabled] === :true

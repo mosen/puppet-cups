@@ -9,34 +9,17 @@ describe 'cups::init' do
     EOS
   }
 
-  it 'should complete without error' do
+  it 'should work with no errors' do
     apply_manifest(manifest, :catch_failures => true)
-  end
-
-  it 'should be idempotent' do
-    expect(apply_manifest(manifest, :catch_failures => true).exit_code).to be_zero
+    apply_manifest(manifest, :catch_changes => true)
   end
 
   it 'should install the cups package' do
-    confine :to, :platform => 'centos' do |centos|
-      on centos, 'yum list installed cups' do |result|
-        expect(result.exit_code).to be_zero
-      end
-    end
-
-    confine :to, :platform => 'ubuntu' do |ubuntu|
-      on ubuntu, 'dpkg --get-selections cups' do |result|
-        expect(result.exit_code).to be_zero
-      end
-    end
+    expect(shell("puppet resource package cups").stdout).to_not include('absent')
   end
 
   it 'should ensure that the cups service is running' do
-    confine :to, :platform => 'centos' do |centos|
-      on centos, 'service cups status' do |result|
-        expect(result.exit_code).to be_zero
-      end
-    end
+    expect(shell("puppet resource service cups").stdout).to include('running')
   end
 end
 
@@ -50,11 +33,7 @@ describe 'cups { ensure => stopped }' do
   }
 
   it 'should stop the cups service' do
-    confine :to, :platform => 'centos' do |centos|
-      on centos, 'service cups status' do |result|
-        expect(result.exit_code).to_not be_zero
-      end
-    end
+    expect(shell("puppet resource service cups").stdout).to include('stopped')
   end
 end
 
@@ -68,11 +47,21 @@ describe 'cups { ensure => absent }' do
   }
 
   it 'should remove the cups package' do
-    confine :to, :platform => 'centos' do |centos|
-      on centos, 'yum list installed cups' do |result|
-        expect(result.exit_code).to_not be_zero
-      end
-    end
+    expect(shell("puppet resource package cups").stdout).to include('absent')
+  end
+end
+
+describe 'cups { enable => false }' do
+  let(:manifest) {
+    <<-EOS
+      class { 'cups':
+        enable => false,
+      }
+    EOS
+  }
+
+  it 'should disable the cups service' do
+    expect(shell("puppet resource service cups").stdout).to include('disabled')
   end
 end
 

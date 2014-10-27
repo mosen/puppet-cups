@@ -29,4 +29,9 @@ describe 'printer resource ppd_options parameter' do
       expect(shell("lpoptions -p cups_printer_ppd_colormodel -l").stdout).to include("*Gray")
     end
   end
+
+  after(:all) do
+    # Clean up tests for re-run
+    shell("lpadmin -x cups_printer_ppd_colormodel")
+  end
 end

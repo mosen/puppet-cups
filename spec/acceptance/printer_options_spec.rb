@@ -2,7 +2,7 @@ require 'spec_helper_acceptance'
 
 describe 'printer resource options parameter' do
 
-  describe '(issue #38) when setting auth-info-required, the option isnt modified.' do
+  describe '(issue #38) when setting auth-info-required=negotiate' do
     let(:manifest) {
       <<-EOS
        printer { 'cups_printer_set_authinfo':
@@ -16,12 +16,9 @@ describe 'printer resource options parameter' do
       EOS
     }
 
-    it 'should complete with no errors' do
+    it 'should work with no errors' do
       apply_manifest(manifest, :catch_failures => true)
-    end
-
-    it 'should be idempotent' do
-      expect(apply_manifest(manifest, :catch_failures => true).exit_code).to be_zero
+      apply_manifest(manifest, :catch_changes => true)
     end
 
     it 'should display auth-info-required=negotiate as part of the options listing' do
@@ -29,7 +26,7 @@ describe 'printer resource options parameter' do
     end
   end
 
-  describe '(issue #38) when setting auth-info-required=none, the puppet run is not idempotent.' do
+  describe '(issue #38) when setting auth-info-required=none' do
     let(:manifest) {
       <<-EOS
        printer { 'cups_printer_no_authinfo':
@@ -43,16 +40,13 @@ describe 'printer resource options parameter' do
       EOS
     }
 
-    it 'should complete with no errors' do
+    it 'should work with no errors' do
       apply_manifest(manifest, :catch_failures => true)
-    end
-
-    it 'should be idempotent' do
-      expect(apply_manifest(manifest, :catch_failures => true).exit_code).to be_zero
+      apply_manifest(manifest, :catch_changes => true)
     end
 
     it 'should not include auth-info-required as part of the options listing' do
-      expect(shell("lpoptions -p cups_printer_no_authinfo").stdout).to_not include("auth-info-required")
+      expect(shell("lpoptions -p cups_printer_no_authinfo").stdout).to include("auth-info-required=none")
     end
   end
 
