@@ -17,12 +17,9 @@ describe 'printer resource ppd_options parameter' do
       EOS
     }
 
-    it 'should complete with no errors' do
+    it 'should work with no errors' do
       apply_manifest(manifest, :catch_failures => true)
-    end
-
-    it 'should be idempotent' do
-      expect(apply_manifest(manifest, :catch_failures => true).exit_code).to be_zero
+      apply_manifest(manifest, :catch_changes => true)
     end
 
     it 'should reflect the setting ColorModel=Gray in the vendor options listing' do
