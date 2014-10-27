@@ -1,16 +1,16 @@
 require 'spec_helper_acceptance'
 
-describe 'CUPS printer resource type' do
+describe 'printer resource properties' do
 
   describe 'when adding a generic printer queue: `cups_printer_add_0`' do
     let(:manifest) {
       <<-EOS
-        printer { 'cups_printer_add_0':
-          ensure       => present,
-          model        => 'drv:///sample.drv/deskjet.ppd',
-          description  => 'Generic Test Printer',
-          error_policy => stop_printer,
-        }
+          printer { 'cups_printer_add_0':
+            ensure       => present,
+            model        => 'drv:///sample.drv/deskjet.ppd',
+            description  => 'Generic Test Printer',
+            error_policy => stop_printer,
+          }
       EOS
     }
 
@@ -148,4 +148,5 @@ describe 'CUPS printer resource type' do
     shell("lpadmin -x cups_printer_add_0")
     shell("lpadmin -x cups_printer_add_pagesize")
   end
+
 end

@@ -3,7 +3,7 @@ HOSTS:
     roles:
       - agent
       - default
-    platform: el-6-x86_64
+    platform: centos-64-x64
     box : centos-64-x64-vbox4210-nocm
     box_url : http://puppet-vagrant-boxes.puppetlabs.com/centos-64-x64-vbox4210-nocm.box
     hypervisor : vagrant
@@ -12,7 +12,7 @@ HOSTS:
   ubuntu-13-x64:
     roles:
       - agent
-    platform: ubuntu-1310-amd64
+    platform: ubuntu-1310-x64
     box: ubuntu-1310-x64-virtualbox-nocm
     box_url : http://puppet-vagrant-boxes.puppetlabs.com/ubuntu-1310-x64-virtualbox-nocm.box
     hypervisor : vagrant
