@@ -122,7 +122,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
       
       # and reject them from the list of settable options
-      options.reject! { |k,v| Option_Properties.include? k }
+      options.reject! { |k, _| Option_Properties.include? k }
       printer[:options] = options
 
       provider_instances << new(printer)
@@ -223,6 +223,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     Shellwords.shellwords(lpoptions('-p', destination)).each do |kv|
       values = kv.split('=')
       next if Immutable_Option_Blacklist.include? values[0]
+      next unless resource.nil? or resource[:options].include? values[0]
+
       options[values[0]] = values[1]
     end
 

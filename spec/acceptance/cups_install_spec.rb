@@ -23,11 +23,11 @@ describe 'cups::init' do
   end
 end
 
-describe 'cups { ensure => stopped }' do
+describe 'cups { service_ensure => stopped }' do
   let(:manifest) {
     <<-EOS
       class { 'cups':
-        ensure => stopped,
+        service_ensure => stopped,
       }
     EOS
   }
@@ -37,11 +37,11 @@ describe 'cups { ensure => stopped }' do
   end
 end
 
-describe 'cups { ensure => absent }' do
+describe 'cups { package_ensure => absent }' do
   let(:manifest) {
     <<-EOS
       class { 'cups':
-        ensure => absent,
+        package_ensure => absent,
       }
     EOS
   }
@@ -51,11 +51,11 @@ describe 'cups { ensure => absent }' do
   end
 end
 
-describe 'cups { enable => false }' do
+describe 'cups { service_enabled => false }' do
   let(:manifest) {
     <<-EOS
       class { 'cups':
-        enable => false,
+        service_enabled => false,
       }
     EOS
   }
