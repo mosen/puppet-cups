@@ -125,6 +125,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       options.reject! { |k, _| Option_Properties.include? k }
       printer[:options] = options
 
+      vendor_options = self.ppd_options(name, nil)
+      printer[:ppd_options] = vendor_options
+
       provider_instances << new(printer)
     end
 
@@ -156,7 +159,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
       
         # and reject them from the list of settable options
-        options = options.reject! { |k,v| Option_Properties.include? k }
+        options.reject! { |k, _| Option_Properties.include? k }
         printer[:options] = options
 
         # Fetch PPD options with defaults and current values indicated by asterisk

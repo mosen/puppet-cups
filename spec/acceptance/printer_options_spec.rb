@@ -50,6 +50,23 @@ describe 'printer resource options parameter' do
     end
   end
 
+  describe 'regression: single quote in option causes parsing of options to fail' do
+    let(:manifest) {
+      <<-EOS
+       printer { 'cups_printer_location_quote':
+          ensure       => present,
+          model        => 'drv:///sample.drv/deskjet.ppd',
+          location     => "John's Office",
+       }
+      EOS
+    }
+
+    it 'should work with no errors' do
+      apply_manifest(manifest, :catch_failures => true)
+      apply_manifest(manifest, :catch_changes => true)
+    end
+  end
+
   after(:all) do
     # Clean up tests for re-run
     shell("lpadmin -x cups_printer_set_authinfo")

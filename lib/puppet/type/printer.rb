@@ -71,16 +71,18 @@ Puppet::Type.newtype(:printer) do
   end
 
   newproperty(:options) do
-    desc "Sets a list of options for the printer using lpoptions. These options may only apply to lp/lpr jobs submitted
-    locally"
+    desc "Set cups options.
+
+    Some of these options are described in the lpadmin(8) manpage. You can query these options using
+    lpoptions -p destination."
 
     validate do |value|
       raise ArgumentError, "invalid value supplied for printer options" unless value.is_a? Hash
     end
   end
 
-  newparam(:ppd_options) do
-    desc "Set additional PPD options for this printer. These are only set upon creation.
+  newproperty(:ppd_options) do
+    desc "Set vendor (ppd) options. These are sometimes specific to the model of printer.
 
     Use lpoptions -p destination -l to get a list of valid vendor PPD options for that queue."
 
