@@ -71,6 +71,7 @@ describe 'printer resource options parameter' do
     # Clean up tests for re-run
     shell("lpadmin -x cups_printer_set_authinfo")
     shell("lpadmin -x cups_printer_no_authinfo")
+    shell("lpadmin -x cups_printer_location_quote")
   end
 
 end

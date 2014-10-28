@@ -174,7 +174,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   # TODO: Needs a much more efficient way of parsing `lpstat -l -p` output.
-  # TODO: i18n
   def self.printers_long
     printers = {}
 
@@ -219,6 +218,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
   # Only prefetch values for options that are specified in the resource definition!
   # queue options are space separated, and come in pairs separated by equals(=)
+  # NOTE: single quotation marks in option values are not escaped. So this makes things very difficult to parse.
   def self.printer_options(destination, resource)
     options = {}
 
