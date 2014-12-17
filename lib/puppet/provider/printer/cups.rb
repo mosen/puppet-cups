@@ -221,12 +221,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # NOTE: single quotation marks in option values are not escaped. So this makes things very difficult to parse.
   def self.printer_options(destination, resource)
     options = {}
+    return options unless resource[:options]
 
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
     Shellwords.shellwords(lpoptions('-p', destination)).each do |kv|
       values = kv.split('=')
       next if Immutable_Option_Blacklist.include? values[0]
-      next unless resource.nil? or resource[:options].include? values[0]
+      next unless resource[:options].include? values[0]
 
       options[values[0]] = values[1]
     end
@@ -239,10 +240,12 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # If something other than the default is selected, it turns up in lpoptions -p
   def self.ppd_options(destination, resource)
     ppdopts = {}
+    return ppdopts unless resource[:ppd_options]
 
     lpoptions('-p', destination, '-l').each_line do |line|
       keyvalues = line.split(':')
       key = /^([^\/]*)/.match(keyvalues[0]).captures[0]
+      next unless resource[:ppd_options].include? key
 
       selected_value = /\s\*([^\s]*)\s/.match(keyvalues[1]).captures[0]
 
