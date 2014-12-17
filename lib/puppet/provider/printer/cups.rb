@@ -189,7 +189,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
               printer = { :accept => :true } # Current printer entry being parsed
             end
 
-            header = line.match(/printer (.*) (disabled|is idle)/).captures # TODO: i18n
+            header = line.match(/printer (.*) (disabled|is idle|now printing)/).captures # TODO: i18n
 
             printer[:name] = header[0]
             printer[:enabled] = (header[1] != 'disabled') ? :true : :false
