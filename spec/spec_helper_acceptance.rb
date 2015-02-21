@@ -4,13 +4,13 @@ require 'beaker-rspec'
 unless ENV['BEAKER_provision'] == 'no'
   hosts.each do |host|
     # Install Puppet
-    install_package host, 'rubygems'
-    on host, 'gem install puppet --no-ri --no-rdoc'
-    on host, "mkdir -p #{host['distmoduledir']}"
+    #install_package host, 'rubygems'
+    #on host, 'gem install puppet --no-ri --no-rdoc'
+    #on host, "mkdir -p #{host['distmoduledir']}"
 
     # Install CUPS and start service
     install_package host, 'cups'
-    on host, puppet("resource service cups ensure=running enable=true")
+    on host, puppet('resource', 'service', 'cups', 'ensure=running', 'enable=true')
   end
 end
 

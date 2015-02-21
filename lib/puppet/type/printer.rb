@@ -62,6 +62,12 @@ Puppet::Type.newtype(:printer) do
     defaultto :false
   end
 
+  newproperty(:default, :boolean => true) do
+    desc "Set this destination as the system-wide default destination."
+
+    defaultto :false
+  end
+
   # Error policy is a parameter because it is not displayed in the output of
   # lpoptions -p or lpoptions -p -l, so it cannot be idempotent.
   newparam(:error_policy) do

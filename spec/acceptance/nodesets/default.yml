@@ -5,5 +5,5 @@ HOSTS:
       - default
     platform: ubuntu-precise-x86_64
     hypervisor: vagrant
-    box: puphpet/ubuntu1204-x64
+    box: puppetlabs/ubuntu-12.04-64-puppet
     distmoduledir: /etc/puppet/modules

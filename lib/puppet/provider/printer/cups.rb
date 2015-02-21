@@ -103,12 +103,14 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   def self.instances
     prefetched_uris = printer_uris
     provider_instances = []
+    default_destination = printer_default
 
     printers_long.each do |name, printer|
 
       printer[:ensure] = :present
       printer[:provider] = :cups
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
+      printer[:default] = printer[:name] == default_destination
 
       # Fetch CUPS options set on this destination
       # This includes options stated in `lpadmin` man page as well as non-default PPD options
@@ -137,6 +139,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   def self.prefetch(resources)
     prefetched_uris = printer_uris
     prefetched_printers = printers_long
+    default_destination = printer_default
 
     resources.each do |name, resource|
 
@@ -146,6 +149,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer[:ensure] = :present
         printer[:provider] = :cups
         printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
+        printer[:default] = printer[:name] == default_destination
 
         # Fetch CUPS options set on this destination
         # This includes options stated in `lpadmin` man page as well as non-default PPD options
@@ -213,7 +217,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
       printers
     rescue
-      debug 'lpstat did not return any results'
+      debug 'execution of lpstat failed, returning empty hash'
       printers
     end
   end
@@ -237,6 +241,14 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
 
     options
+  end
+
+  def self.printer_default
+    begin
+      lpstat('-d').split(':', 2)[1].strip
+    rescue
+      nil
+    end
   end
 
   # vendor PPD options are formatted differently:
@@ -322,6 +334,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
               :retry_current_job => 'retry-current-job',
               :stop_printer => 'stop-printer' }[@resource[:error_policy]]
         end
+
+        # Default destination
+        lpoptions '-d', name if @property_hash[:default] == :true
 
         # Common PPD Options
         # `lpadmin` will happily set any of the values without complaining if the value is totally useless.
