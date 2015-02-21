@@ -152,8 +152,7 @@ And run the tests from the root of the source code:
 
 #### Acceptance Tests
 
-You probably won't want to run full acceptance tests due to the amount of time involved pulling down vagrant boxes, but
-you can execute the beaker tests starting with:
+You can execute the beaker tests starting with:
 
     BEAKER_destroy=no bundle exec rspec spec/acceptance
 
@@ -162,4 +161,9 @@ And then re-use the provisioned guests with
     BEAKER_destroy=no BEAKER_provision=no bundle exec rspec spec/acceptance
 
 Unset `BEAKER_destroy` after testing has finished or VM is dirty for the purposes of testing.
+
+2015.02.21: Changed default vagrant boxes to VMWare Fusion boxes. I will keep VirtualBox nodesets but they will only
+ be available optionally by using the `BEAKER_set={nodename}` environment variable.
+Ditched puppetlabs' vagrant boxes since they weren't being updated and they are using vCloud anyway.
+
 

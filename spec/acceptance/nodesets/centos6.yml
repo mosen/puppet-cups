@@ -1,0 +1,9 @@
+HOSTS:
+  agent:
+    roles:
+      - agent
+      - default
+    platform: centos-6.5-x86_64
+    box: puphpet/centos65-x64
+    hypervisor: vagrant
+    distmoduledir : /etc/puppet/modules

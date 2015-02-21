@@ -22,9 +22,9 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   a printer.
   "
 
-  commands :lpadmin => "/usr/sbin/lpadmin"
-  commands :lpoptions => "/usr/bin/lpoptions"
-  commands :lpstat => "/usr/bin/lpstat"
+  commands :lpadmin => '/usr/sbin/lpadmin'
+  commands :lpoptions => '/usr/bin/lpoptions'
+  commands :lpstat => '/usr/bin/lpstat'
 
   #
   # candidate locations for the enable command
@@ -78,7 +78,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   mk_resource_methods
 
   # A hash of type parameters to command line short switches.
-  Cups_Options = {
+  CUPS_OPTIONS = {
       # :class       => '-c%s', # Unsupported, for now
       :model       => '-m%s', # Not idempotent
       :uri         => '-v%s',
@@ -89,14 +89,14 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   }
 
   # Options only alterable via lpadmin -p
-  Admin_Options = %w{ device-uri printer-error-policy printer-is-shared job-sheets-default }
+  ADMIN_OPTIONS = %w{ device-uri printer-error-policy printer-is-shared job-sheets-default }
 
   # Options that are actually not settable, or only settable upon creation. Used to filter the fetch list of options
-  Immutable_Option_Blacklist = %w{ device-uri printer-is-accepting-jobs printer-state printer-error-policy marker-levels
+  IMMUTABLE_OPTION_BLACKLIST = %w{ device-uri printer-is-accepting-jobs printer-state printer-error-policy marker-levels
   marker-names marker-colors marker-types marker-change-time printer-state-change-time printer-commands }
 
   # Options that have been made into resource definition properties, so they are excluded from options/ppd_options output
-  Option_Properties = %w{ printer-is-shared PageSize InputSlot Duplex ColorModel }
+  OPTION_PROPERTIES = %w{ printer-is-shared PageSize InputSlot Duplex ColorModel }
 
   # The instances method collects information through a number of different command line utilities because no single
   # utility displays all of the information about a printer's configuration.
@@ -122,7 +122,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
       
       # and reject them from the list of settable options
-      options.reject! { |k, _| Option_Properties.include? k }
+      options.reject! { |k, _| OPTION_PROPERTIES.include? k }
       printer[:options] = options
 
       vendor_options = self.ppd_options(name, nil)
@@ -159,7 +159,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
       
         # and reject them from the list of settable options
-        options.reject! { |k, _| Option_Properties.include? k }
+        options.reject! { |k, _| OPTION_PROPERTIES.include? k }
         printer[:options] = options
 
         # Fetch PPD options with defaults and current values indicated by asterisk
@@ -173,7 +173,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
   end
 
-  # TODO: Needs a much more efficient way of parsing `lpstat -l -p` output.
+
   def self.printers_long
     printers = {}
 
@@ -189,7 +189,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
               printer = { :accept => :true } # Current printer entry being parsed
             end
 
-            header = line.match(/printer (.*) (disabled|is idle|now printing)/).captures # TODO: i18n
+            header = line.match(/printer (.*) (disabled|is idle|now printing)/).captures
 
             printer[:name] = header[0]
             printer[:enabled] = (header[1] != 'disabled') ? :true : :false
@@ -204,6 +204,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
             printer[:ppd] = line.match(/\tInterface: (.*)/).captures[0]
           when /^\tRejecting Jobs/
             printer[:accept] = :false
+          else
+            # debug 'Unrecognised output from lpstat: %s' % line
         end
       }
 
@@ -216,7 +218,6 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     end
   end
 
-  # Only prefetch values for options that are specified in the resource definition!
   # queue options are space separated, and come in pairs separated by equals(=)
   # NOTE: single quotation marks in option values are not escaped. So this makes things very difficult to parse.
   def self.printer_options(destination, resource)
@@ -225,8 +226,12 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
     # I'm using shellsplit here from the ruby std lib to avoid having to write a quoted string parser.
     Shellwords.shellwords(lpoptions('-p', destination)).each do |kv|
       values = kv.split('=')
-      next if Immutable_Option_Blacklist.include? values[0]
-      next unless resource.nil? or resource[:options].include? values[0]
+
+      # Reiterate: These would be impossible to change using lpadmin
+      next if IMMUTABLE_OPTION_BLACKLIST.include? values[0]
+
+      # Only fetch options that were declared, if there exists a resource at all (not when executing self.instances)
+      next unless resource.nil? or resource[:options].nil? or resource[:options].include? values[0]
 
       options[values[0]] = values[1]
     end
@@ -238,31 +243,35 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # ShortName/Long Name: *Selected NotSelectedValue
   # If something other than the default is selected, it turns up in lpoptions -p
   def self.ppd_options(destination, resource)
-    ppdopts = {}
+    debug "Fetching queue PPD options for #{destination}"
+    output = lpoptions '-p', destination, '-l'
 
-    lpoptions('-p', destination, '-l').each_line do |line|
-      keyvalues = line.split(':')
-      key = /^([^\/]*)/.match(keyvalues[0]).captures[0]
+    output.each_line.inject({}) do |hash, line|
+      kv = line.split(':')
+      key = kv[0].split('/', 2)[0]
 
-      selected_value = /\s\*([^\s]*)\s/.match(keyvalues[1]).captures[0]
+      next hash unless resource.nil? or resource[:ppd_options].nil? or resource[:ppd_options].include? key
 
-      ppdopts[key] = selected_value
+      selected_value = /\*(\w+)/.match(kv[1]).captures[0]
+
+      hash[key] = selected_value
+      hash
     end
-
-    ppdopts
   end
 
   def self.printer_uris
     begin
+      debug 'Fetching all queue device URIs'
+      output = lpstat '-v'
       uris = {}
 
-      lpstat('-v').split("\n").each { |line|
-        caps = line.match(/device for (.*): (.*)/).captures # TODO: i18n
-        uris[caps[0]] = caps[1].gsub(/^\//, 'file:/')
-      }
-
-      uris
+      output.split("\n").inject({}) do |hash, line|
+        caps = line.match(/device for (.*): (.*)/).captures
+        hash[caps[0]] = caps[1].gsub(/^\//, 'file:/')
+        hash
+      end
     rescue
+      debug 'Failed to fetch URIs, see --debug command output above'
       {}
     end
   end
@@ -285,13 +294,12 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   end
 
   def flush
-
     case @property_hash[:ensure]
       when :absent
         lpadmin "-x", name
       when :present
         # Regardless of whether the printer is being added or modified, the `lpadmin -p` command is used.
-        # Some parameters to lpadmin only apply on creation such as PPD specific options. Others can be modified
+        # Some parameters to lpadmin only apply on creation (model, interface, device uri, ppd). Others can be modified
         # after the destination has been created.
 
         params = Array.new
@@ -299,8 +307,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         vendor_options = Array.new
 
         # Short form lpadmin parameters
-        Cups_Options.keys.each do |k|
-          params.unshift Cups_Options[k] % @resource[k] if @resource[k]
+        CUPS_OPTIONS.keys.each do |k|
+          params.unshift CUPS_OPTIONS[k] % @resource[k] if @resource[k]
         end
 
         unless @resource[:shared].nil?
@@ -339,7 +347,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
         if @property_hash[:options].is_a? Hash
           @property_hash[:options].each_pair do |k, v|
-            next if Immutable_Option_Blacklist.include? k
+            next if IMMUTABLE_OPTION_BLACKLIST.include? k
             options.push "-o %s='%s'" % [k, v]
           end
         end
@@ -358,9 +366,10 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
             lpadmin "-p", name, params, vendor_options
           end
 
-          unless vendor_options.empty?
-            lpadmin "-p", name, vendor_options
-          end
+          # Redundant, with vendor_options supplied to the invocation of lpadmin
+          # unless vendor_options.empty?
+          #   lpadmin "-p", name, vendor_options
+          # end
 
           unless options.empty?
             lpadmin "-p", name, options
