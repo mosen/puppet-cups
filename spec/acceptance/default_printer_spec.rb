@@ -13,7 +13,7 @@ describe 'default printer resource' do
   describe 'setting the default printer' do
     let(:manifest) {
       <<-EOS
-       default_printer { 'default_printer_fixture': }
+       default_printer { 'default_printer_fixture': ensure => present, }
       EOS
     }
 
