@@ -91,12 +91,21 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # Options only alterable via lpadmin -p
   ADMIN_OPTIONS = %w{ device-uri printer-error-policy printer-is-shared job-sheets-default }
 
-  # Options that are actually not settable, or only settable upon creation. Used to filter the fetch list of options
+  # This array includes options that are either:
+  #   - Not settable through any command line tool (including properties that report information)
+  #   - Settable via a main flag to lpadmin AND via lpoptions (so we exclude the latter invocation)
+  #   - Settable only upon creation of the queue/destination
+  #
+  # Notes:
+  # printer-info: Should only be settable through description (-D) flag.
+  # printer-location: Should only be settable through location (-L) flag.
   IMMUTABLE_OPTION_BLACKLIST = %w{ device-uri printer-is-accepting-jobs printer-state printer-error-policy marker-levels
-  marker-names marker-colors marker-types marker-change-time printer-state-change-time printer-commands }
+  marker-names marker-colors marker-types marker-change-time printer-state-change-time printer-commands printer-info
+  printer-location }
 
-  # Options that have been made into resource definition properties, so they are excluded from options/ppd_options output
-  OPTION_PROPERTIES = %w{ printer-is-shared PageSize InputSlot Duplex ColorModel }
+  # Options that can be set directly on the resource without the use of options or ppd_options
+  OPTION_PROPERTIES = %w{ printer-is-shared }
+  PPD_OPTION_PROPERTIES = %w{ PageSize InputSlot Duplex ColorModel }
 
   # The instances method collects information through a number of different command line utilities because no single
   # utility displays all of the information about a printer's configuration.
@@ -111,21 +120,26 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
       printer[:uri] = prefetched_uris[printer[:name]] if prefetched_uris.key?(printer[:name])
 
       # Fetch CUPS options set on this destination
-      # This includes options stated in `lpadmin` man page as well as non-default PPD options
+      # This typically includes the options stated in `lpadmin` man page for the -o flag.
       options = self.printer_options(name, nil)
       
       # Grab options that are set via properties or parameters
       printer[:shared] = options['printer-is-shared'] if options.has_key? 'printer-is-shared'
-      printer[:page_size] = options['PageSize'] if options.has_key? 'PageSize'
-      printer[:input_tray] = options['InputSlot'] if options.has_key? 'InputSlot'
-      printer[:duplex] = options['Duplex'] if options.has_key? 'Duplex'
-      printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
       
       # and reject them from the list of settable options
       options.reject! { |k, _| OPTION_PROPERTIES.include? k }
       printer[:options] = options
 
-      vendor_options = self.ppd_options(name, nil)
+      # Fetch PPD options (model dependent)
+      # Defined by the driver, but there are some standard properties.
+      vendor_options = self.ppd_options name
+
+      printer[:page_size] = vendor_options['PageSize'] if vendor_options.has_key? 'PageSize'
+      printer[:input_tray] = vendor_options['InputSlot'] if vendor_options.has_key? 'InputSlot'
+      printer[:duplex] = vendor_options['Duplex'] if vendor_options.has_key? 'Duplex'
+      printer[:color_model] = vendor_options['ColorModel'] if vendor_options.has_key? 'ColorModel'
+
+      vendor_options.reject! { |k, _| PPD_OPTION_PROPERTIES.include? k }
       printer[:ppd_options] = vendor_options
 
       provider_instances << new(printer)
@@ -153,18 +167,24 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
         # Grab options that are set via properties or parameters
         printer[:shared] = options['printer-is-shared'] if options.has_key? 'printer-is-shared'
-        printer[:page_size] = options['PageSize'] if options.has_key? 'PageSize'
-        printer[:input_tray] = options['InputSlot'] if options.has_key? 'InputSlot'
-        printer[:duplex] = options['Duplex'] if options.has_key? 'Duplex'
-        printer[:color_model] = options['ColorModel'] if options.has_key? 'ColorModel'
       
         # and reject them from the list of settable options
         options.reject! { |k, _| OPTION_PROPERTIES.include? k }
         printer[:options] = options
 
         # Fetch PPD options with defaults and current values indicated by asterisk
-        ppd_options = self.ppd_options(name, resource)
-        printer[:ppd_options] = ppd_options
+        vendor_options = self.ppd_options name
+
+        printer[:page_size] = vendor_options['PageSize'] if vendor_options.has_key? 'PageSize'
+        printer[:input_tray] = vendor_options['InputSlot'] if vendor_options.has_key? 'InputSlot'
+        printer[:duplex] = vendor_options['Duplex'] if vendor_options.has_key? 'Duplex'
+        printer[:color_model] = vendor_options['ColorModel'] if vendor_options.has_key? 'ColorModel'
+
+        vendor_options.delete_if { |k, _| PPD_OPTION_PROPERTIES.include? k }
+
+        unless resource[:ppd_options].nil?
+          printer[:ppd_options] = vendor_options.select { |k, v| resource[:ppd_options].has_key? k }
+        end
 
         resource.provider = new(printer)
       else
@@ -242,15 +262,13 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # vendor PPD options are formatted differently:
   # ShortName/Long Name: *Selected NotSelectedValue
   # If something other than the default is selected, it turns up in lpoptions -p
-  def self.ppd_options(destination, resource)
+  def self.ppd_options(destination)
     debug "Fetching queue PPD options for #{destination}"
     output = lpoptions '-p', destination, '-l'
 
     output.each_line.inject({}) do |hash, line|
       kv = line.split(':')
       key = kv[0].split('/', 2)[0]
-
-      next hash unless resource.nil? or resource[:ppd_options].nil? or resource[:ppd_options].include? key
 
       selected_value = /\*(\w+)/.match(kv[1]).captures[0]
 

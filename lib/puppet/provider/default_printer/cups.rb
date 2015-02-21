@@ -9,7 +9,12 @@ Puppet::Type.type(:default_printer).provide :cups, :parent => Puppet::Provider d
 
   def self.instances
     default = printer_default
-    [ new({ :name => default }) ]
+
+    if default.nil?
+      []
+    else
+      [ new({ :name => default }) ]
+    end
   end
 
   def self.printer_default

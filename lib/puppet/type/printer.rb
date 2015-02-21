@@ -91,21 +91,21 @@ Puppet::Type.newtype(:printer) do
     end
   end
 
-  # Standard PPD Options - Only set on creation
+  # Standard PPD Options
 
-  newparam(:input_tray) do
+  newproperty(:input_tray) do
     desc "Set the input slot/input tray (Value depends on PPD)"
   end
 
-  newparam(:duplex) do
+  newproperty(:duplex) do
     desc "Set duplex mode (Value depends on PPD)"
   end
   #
-  newparam(:page_size) do
+  newproperty(:page_size) do
     desc "Set the page size (Value depends on PPD)"
   end
   #
-  newparam(:color_model) do
+  newproperty(:color_model) do
     desc "Set the color model (CMY, CMYK, RGB, Gray)"
   end
 
