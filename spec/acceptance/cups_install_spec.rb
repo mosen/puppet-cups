@@ -11,6 +11,9 @@ describe 'cups::init' do
 
   it 'should work with no errors' do
     apply_manifest(manifest, :catch_failures => true)
+  end
+
+  it 'should be idempotent' do
     apply_manifest(manifest, :catch_changes => true)
   end
 
@@ -32,19 +35,37 @@ describe 'cups { service_ensure => stopped }' do
     EOS
   }
 
+  it 'should work with no errors' do
+    apply_manifest(manifest, :catch_failures => true)
+  end
+
+  it 'should be idempotent' do
+    apply_manifest(manifest, :catch_changes => true)
+  end
+
   it 'should stop the cups service' do
     expect(shell("puppet resource service cups").stdout).to include('stopped')
   end
 end
 
 describe 'cups { package_ensure => absent }' do
+  # If the service parameter is absent, removing the package makes each application fail.
   let(:manifest) {
     <<-EOS
       class { 'cups':
         package_ensure => absent,
+        service_ensure => stopped,
       }
     EOS
   }
+
+  it 'should work with no errors' do
+    apply_manifest(manifest, :catch_failures => true)
+  end
+
+  it 'should be idempotent' do
+    apply_manifest(manifest, :catch_changes => true)
+  end
 
   it 'should remove the cups package' do
     expect(shell("puppet resource package cups").stdout).to include('absent')
@@ -60,8 +81,16 @@ describe 'cups { service_enabled => false }' do
     EOS
   }
 
+  it 'should work with no errors' do
+    apply_manifest(manifest, :catch_failures => true)
+  end
+
+  it 'should be idempotent' do
+    apply_manifest(manifest, :catch_changes => true)
+  end
+
   it 'should disable the cups service' do
-    expect(shell("puppet resource service cups").stdout).to include('disabled')
+    expect(shell("puppet resource service cups").stdout).to include("enable => 'false'")
   end
 end
 

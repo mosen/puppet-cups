@@ -19,6 +19,9 @@ describe 'printer resource ppd_options parameter' do
 
     it 'should work with no errors' do
       apply_manifest(manifest, :catch_failures => true)
+    end
+
+    it 'should be idempotent' do
       apply_manifest(manifest, :catch_changes => true)
     end
 
