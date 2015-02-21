@@ -3,15 +3,15 @@ require 'spec_helper_acceptance'
 describe 'printer resource ppd_options parameter' do
 
   # PPD options described in the Adobe PPD Specification Document.
-  describe 'when setting ColorModel=Gray' do
+  describe 'when setting MediaType=Bond' do
     let(:manifest) {
       <<-EOS
-       printer { 'cups_printer_ppd_colormodel':
+       printer { 'cups_printer_ppd_mediatype':
           ensure       => present,
           model        => 'drv:///sample.drv/deskjet.ppd',
-          description  => 'PPD ColorModel',
+          description  => 'PPD MediaType',
           ppd_options  => {
-            'ColorModel' => 'Gray'
+            'MediaType' => 'Bond'
           }
        }
       EOS
@@ -26,12 +26,12 @@ describe 'printer resource ppd_options parameter' do
     end
 
     it 'should reflect the setting ColorModel=Gray in the vendor options listing' do
-      expect(shell("lpoptions -p cups_printer_ppd_colormodel -l").stdout).to include("*Gray")
+      expect(shell("lpoptions -p cups_printer_ppd_mediatype -l").stdout).to include("*Bond")
     end
   end
 
   after(:all) do
     # Clean up tests for re-run
-    shell("lpadmin -x cups_printer_ppd_colormodel")
+    shell("lpadmin -x cups_printer_ppd_mediatype")
   end
 end

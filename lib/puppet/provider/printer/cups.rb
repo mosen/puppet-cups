@@ -183,7 +183,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         vendor_options.delete_if { |k, _| PPD_OPTION_PROPERTIES.include? k }
 
         unless resource[:ppd_options].nil?
-          printer[:ppd_options] = vendor_options.select { |k, v| resource[:ppd_options].has_key? k }
+          printer[:ppd_options] = vendor_options.select { |k, _| resource[:ppd_options].has_key? k }
         end
 
         resource.provider = new(printer)
