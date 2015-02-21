@@ -183,7 +183,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         vendor_options.delete_if { |k, _| PPD_OPTION_PROPERTIES.include? k }
 
         unless resource[:ppd_options].nil?
-          printer[:ppd_options] = vendor_options.select { |k, _| resource[:ppd_options].has_key? k }
+          resource_ppd_options = resource[:ppd_options]
+          printer[:ppd_options] = vendor_options.select { |k, _| resource_ppd_options.include? k }
         end
 
         resource.provider = new(printer)
@@ -379,15 +380,16 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         begin
           # -E means different things when it comes before or after -p, see man page for explanation.
           if @property_hash[:enabled] === :true and @property_hash[:accept] === :true
-            lpadmin "-p", name, "-E", params, vendor_options
+            lpadmin "-p", name, "-E", params
           else
-            lpadmin "-p", name, params, vendor_options
+            lpadmin "-p", name, params
           end
 
-          # Redundant, with vendor_options supplied to the invocation of lpadmin
-          # unless vendor_options.empty?
-          #   lpadmin "-p", name, vendor_options
-          # end
+          # Some PPD Options cannot be set upon the creation of the destination for some reason: see PageSize.
+          # So we call lpadmin again with vendor options.
+          unless vendor_options.empty?
+            lpadmin "-p", name, vendor_options
+          end
 
           unless options.empty?
             lpadmin "-p", name, options
