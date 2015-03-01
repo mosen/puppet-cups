@@ -1,0 +1,9 @@
+HOSTS:
+  agent:
+    roles:
+      - agent
+      - default
+    platform: ubuntu-trusty-x86_64
+    hypervisor: vagrant
+    box: puppetlabs/ubuntu-14.04-64-puppet
+    distmoduledir: /etc/puppet/modules
