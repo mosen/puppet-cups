@@ -175,11 +175,43 @@ describe 'printer resource properties' do
     # TODO: Test error policy in lpstat output
   end
 
+  describe 'when adding two printers simultaneously' do
+    let(:manifest) {
+      <<-EOS
+      printer { "cups_two_printer_A":
+        ensure      => present,
+        shared      => true,
+        uri         => "lpd://10.0.0.1/main",
+        description => "Dual Printer Regression A",
+        model       => "raw",
+      }
+
+      printer { "cups_two_printer_B":
+        ensure      => present,
+        shared      => true,
+        uri         => "lpd://10.0.0.2/main",
+        description => "Dual Printer Regression B",
+        model       => "raw",
+      }
+      EOS
+    }
+
+    it 'should work with no errors' do
+      apply_manifest(manifest, :catch_failures => true)
+    end
+
+    it 'should be idempotent' do
+      apply_manifest(manifest, :catch_changes => true)
+    end
+  end
+
   after(:all) do
     # Clean up tests for re-run
     shell("lpadmin -x cups_printer_add_0")
     shell("lpadmin -x cups_printer_add_pagesize")
     shell("lpadmin -x cups_printer_err_abort")
+    shell("lpadmin -x cups_two_printer_A")
+    shell("lpadmin -x cups_two_printer_B")
   end
 
 end
