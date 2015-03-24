@@ -74,4 +74,26 @@ describe 'printer resource options parameter' do
     shell("lpadmin -x cups_printer_location_quote")
   end
 
+  describe 'regression issue #39: error calling include? when options is not set, tries to set every option.' do
+    #     On OSX machines I have tested:
+    #
+    #         lib/puppet/provider/printer/cups.rb: blows up about calling include? on nil when you don't set options.
+    #         AND
+    #         Continues to try and set every possible option listed by lpoptions -l instead of just the options you pass as a hash.
+
+    let(:manifest) {
+      <<-EOS
+       printer { 'cups_printer_options_nil':
+          ensure       => present,
+          model        => 'drv:///sample.drv/deskjet.ppd',
+       }
+      EOS
+    }
+
+    it 'should work with no errors' do
+      apply_manifest(manifest, :catch_failures => true)
+      apply_manifest(manifest, :catch_changes => true)
+    end
+  end
+
 end
