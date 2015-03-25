@@ -7,6 +7,7 @@ describe 'printer resource i18n' do
 
   after(:all) do
     shell 'export LANG=en_US.UTF-8'
+    shell 'lpadmin -x cups_printer_deutsch'
   end
 
   describe 'create printer with locale de_DE' do

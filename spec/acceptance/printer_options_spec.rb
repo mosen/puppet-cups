@@ -76,13 +76,6 @@ describe 'printer resource options parameter' do
     end
   end
 
-  after(:all) do
-    # Clean up tests for re-run
-    shell("lpadmin -x cups_printer_set_authinfo")
-    shell("lpadmin -x cups_printer_no_authinfo")
-    shell("lpadmin -x cups_printer_location_quote")
-  end
-
   describe 'regression issue #39: error calling include? when options is not set, tries to set every option.' do
     #     On OSX machines I have tested:
     #
@@ -104,5 +97,15 @@ describe 'printer resource options parameter' do
       apply_manifest(manifest, :catch_changes => true)
     end
   end
+
+  after(:all) do
+    # Clean up tests for re-run
+    shell("lpadmin -x cups_printer_set_authinfo")
+    shell("lpadmin -x cups_printer_no_authinfo")
+    shell("lpadmin -x cups_printer_location_quote")
+    shell("lpadmin -x cups_printer_options_nil")
+  end
+
+
 
 end

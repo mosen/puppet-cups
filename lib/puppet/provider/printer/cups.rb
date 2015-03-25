@@ -264,17 +264,22 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   # ShortName/Long Name: *Selected NotSelectedValue
   # If something other than the default is selected, it turns up in lpoptions -p
   def self.ppd_options(destination)
-    debug "Fetching queue PPD options for #{destination}"
-    output = lpoptions '-p', destination, '-l'
+    begin
+      debug "Fetching queue PPD options for #{destination}"
+      output = lpoptions '-p', destination, '-l'
 
-    output.each_line.inject({}) do |hash, line|
-      kv = line.split(':')
-      key = kv[0].split('/', 2)[0]
+      output.each_line.inject({}) do |hash, line|
+        kv = line.split(':')
+        key = kv[0].split('/', 2)[0]
 
-      selected_value = /\*(\w+)/.match(kv[1]).captures[0]
+        selected_value = /\*(\w+)/.match(kv[1]).captures[0]
 
-      hash[key] = selected_value
-      hash
+        hash[key] = selected_value
+        hash
+      end
+    rescue
+      debug 'Failed to fetch PPD options, this may be normal behaviour depending on printer setup.'
+      {}
     end
   end
 
