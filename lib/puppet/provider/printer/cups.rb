@@ -184,7 +184,8 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
 
         unless resource[:ppd_options].nil?
           resource_ppd_options = resource[:ppd_options]
-          printer[:ppd_options] = vendor_options.select { |k, _| resource_ppd_options.include? k }
+          current_ppd_options = vendor_options.reject { |k, _| !resource_ppd_options.has_key? k }
+          printer[:ppd_options] = current_ppd_options
         end
 
         resource.provider = new(printer)
