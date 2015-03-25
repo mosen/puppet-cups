@@ -1,7 +1,0 @@
-name 'mosen-cups'
-version '1.4.0-RC1'
-summary 'Manage printers and printer default options in CUPS'
-description 'Manage CUPS queues and default options via the CUPS command line utilities.'
-author 'mosen'
-source 'https://github.com/mosen/puppet-cups.git'
-license 'MIT'
