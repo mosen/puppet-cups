@@ -8,6 +8,8 @@
   "project_page": "https://forge.puppetlabs.com/mosen/cups",
   "issues_url": "https://github.com/mosen/puppet-cups/issues",
   "tags": ["cups", "printer"],
+  "dependencies": [
+  ],
   "operatingsystem_support": [
     {
       "operatingsystem":"Darwin",
