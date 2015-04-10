@@ -7,10 +7,16 @@ class cups (
 
   $service_ensure = $cups::params::service_ensure,
   $service_enabled = $cups::params::service_enabled,
-  $service_name = $cups::params::service_name
+  $service_name = $cups::params::service_name,
 
+  $cups_lpd_enable = $cups::params::cups_lpd_enable,
+  $package_cups_lpd = $cups::params::package_cups_lpd,
+  $config_file = $cups::params::config_file,
 ) inherits cups::params {
 
   include '::cups::install'
   include '::cups::service'
+  if $cups::cups_lpd_enable {
+      include '::cups::config'
+  }
 }

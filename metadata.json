@@ -1,6 +1,6 @@
 {
   "name": "mosen-cups",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "author": "Mosen <mosen@github.com>",
   "license": "Apache-2.0",
   "summary": "CUPS Printing System Installation and Queue Management",
