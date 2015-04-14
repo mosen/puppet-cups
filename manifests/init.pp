@@ -13,4 +13,7 @@ class cups (
 
   include '::cups::install'
   include '::cups::service'
+
+  $printers_default = { ensure => present }
+  create_resources('printer', hiera_hash(cups::printers), $printers_default)
 }
