@@ -4,8 +4,8 @@ Puppet::Type.type(:default_printer).provide :cups, :parent => Puppet::Provider d
   This has no effect on the Mac OS X default destination, which is set via the GUI only.
   "
 
-  commands :lpoptions => '/usr/bin/lpoptions'
-  commands :lpstat => '/usr/bin/lpstat'
+  commands :lpoptions => 'lpoptions'
+  commands :lpstat => 'lpstat'
 
   def self.instances
     default = printer_default
