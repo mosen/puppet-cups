@@ -11,8 +11,8 @@ Puppet::Type.type(:printer_defaults).provide :cups_options, :parent => Puppet::P
   Classes are parsed as normal printer destinations at the moment, and are interpreted as such.
   "
 
-  commands :lpoptions => "/usr/bin/lpoptions"
-  #commands :lpinfo => "/usr/sbin/lpinfo"
+  commands :lpoptions => "lpoptions"
+  #commands :lpinfo => "lpinfo"
 
   mk_resource_methods
 
