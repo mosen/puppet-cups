@@ -18,7 +18,7 @@ class cups (
   include '::cups::service'
 
   $printers_default = { ensure => present }
-  create_resources('printer', hiera_hash(cups::printers), $printers_default)
+  create_resources('printer', hiera_hash(cups::printers, { }), $printers_default)
 
   if $cups::cups_lpd_enable {
       include '::cups::config'
