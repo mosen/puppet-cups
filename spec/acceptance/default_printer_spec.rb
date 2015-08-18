@@ -13,7 +13,7 @@ describe 'default printer resource' do
   describe 'setting the default printer' do
     let(:manifest) {
       <<-EOS
-       default_printer { 'default_printer_fixture': ensure => present, }
+       class { 'cups': default_printer => 'default_printer_fixture' }
       EOS
     }
 
@@ -26,7 +26,7 @@ describe 'default printer resource' do
     end
 
     it 'should output the name of the fixture when calling puppet resource' do
-      expect(shell("puppet resource default_printer").stdout).to include('default_printer_fixture')
+      expect(shell('lpstat -d').stdout).to include('default_printer_fixture')
     end
   end
 
