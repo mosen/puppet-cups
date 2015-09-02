@@ -9,6 +9,10 @@
   "issues_url": "https://github.com/mosen/puppet-cups/issues",
   "tags": ["cups", "printer"],
   "dependencies": [
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">= 2.0.0"
+    },
   ],
   "operatingsystem_support": [
     {
