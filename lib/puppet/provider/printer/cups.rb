@@ -22,7 +22,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
   a printer.
   "
 
-  os = Facter.fact('os').value
+  os = Facter.value(:os)
   os_family = os['family'].downcase
 
   commands :lpadmin => 'lpadmin'
