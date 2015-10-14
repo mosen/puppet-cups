@@ -10,7 +10,7 @@ class cups::install {
     package { 'cups-lpd':
       ensure          => $::cups::package_ensure,
       name            => $::cups::package_cups_lpd,
-      install_options => $::cups::package_cups_lpd_install_options,
+      install_options => $::cups::package_install_options,
     }
   }
 }
