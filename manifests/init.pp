@@ -1,16 +1,19 @@
 # Manages the Common UNIX Printing System (CUPS)
 class cups (
-  $default_printer      = undef,
-  $package_ensure       = $::cups::params::package_ensure,
-  $package_name         = $::cups::params::package_name,
-  $devel_package_ensure = $::cups::params::devel_package_ensure,
-  $devel_package_name   = $::cups::params::devel_package_name,
-  $service_ensure       = $::cups::params::service_ensure,
-  $service_enabled      = $::cups::params::service_enabled,
-  $service_name         = $::cups::params::service_name,
-  $cups_lpd_enable      = $::cups::params::cups_lpd_enable,
-  $package_cups_lpd     = $::cups::params::package_cups_lpd,
-  $config_file          = $::cups::params::config_file,
+  $default_printer                  = undef,
+  $package_ensure                   = $::cups::params::package_ensure,
+  $package_name                     = $::cups::params::package_name,
+  $package_install_options          = $::cups::params::package_install_options,
+  $devel_package_ensure             = $::cups::params::devel_package_ensure,
+  $devel_package_name               = $::cups::params::devel_package_name,
+  $devel_package_install_options    = $::cups::params::devel_package_install_options,
+  $service_ensure                   = $::cups::params::service_ensure,
+  $service_enabled                  = $::cups::params::service_enabled,
+  $service_name                     = $::cups::params::service_name,
+  $cups_lpd_enable                  = $::cups::params::cups_lpd_enable,
+  $package_cups_lpd                 = $::cups::params::package_cups_lpd,
+  $package_cups_lpd_install_options = $::cups::params::package_cups_lpd_install_options,
+  $config_file                      = $::cups::params::config_file,
 ) inherits cups::params {
 
   include '::cups::install'
