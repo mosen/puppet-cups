@@ -10,6 +10,7 @@ class cups::config {
       port         => '515',
       wait         => 'no',
       user         => 'lp',
+      group        => 'sys',
       server       => '/usr/lib/cups/daemon/cups-lpd',  
     }
   }
