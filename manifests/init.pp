@@ -23,7 +23,6 @@ class cups (
 
   $printers_def = {
     ensure  => present,
-    before  => Exec['default_printer'],
     require => Class['::cups::service'],
   }
   $printers = hiera_hash('cups::printers', {})
@@ -41,7 +40,7 @@ class cups (
       command => "lpoptions -d ${default_printer}",
       unless  => "grep -q \'^Default ${default_printer}$\' /etc/cups/lpoptions",
       path    => ['/usr/local/bin', '/usr/bin', '/bin'],
-      require => Class['::cups::service'],
+      require => [ Class['::cups::service'], Printer[keys($printers)], ],
     }
   }
 }
