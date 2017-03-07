@@ -241,7 +241,7 @@ Puppet::Type.type(:printer).provide :cups, :parent => Puppet::Provider do
         kv = line.split(':')
         key = kv[0].split('/', 2)[0]
 
-        selected_value = /\*(\w+)/.match(kv[1]).captures[0]
+        selected_value = /\*(\S+)/.match(kv[1]).captures[0]
 
         hash[key] = selected_value
         hash
