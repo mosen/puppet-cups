@@ -1,3 +1,6 @@
 coverage
 log
 junit
+
+.idea
+*.iml
